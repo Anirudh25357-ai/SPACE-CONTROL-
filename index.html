@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPACE CONTROL — Mission Command</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <!-- External Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════
+       STARFIELD CANVAS (fixed background layer)
+       ══════════════════════════════════════════════ -->
+  <canvas id="starfield"></canvas>
+
+
+  <!-- ══════════════════════════════════════════════
+       NAVIGATION
+       ══════════════════════════════════════════════ -->
+  <nav>
+    <div class="nav-logo">⬡ SPACE CONTROL</div>
+
+    <ul class="nav-links">
+      <li><a href="#missions">Missions</a></li>
+      <li><a href="#kalpana">Kalpana Chawla</a></li>
+      <li><a href="#control">Control Room</a></li>
+      <li><a href="#solar">Solar System</a></li>
+    </ul>
+
+    <div class="nav-status">
+      <div class="status-dot"></div>
+      ALL SYSTEMS NOMINAL
+    </div>
+  </nav>
+
+
+  <!-- ══════════════════════════════════════════════
+       HERO SECTION
+       ══════════════════════════════════════════════ -->
+  <section id="hero">
+    <!-- Animated perspective grid -->
+    <div class="hero-grid"></div>
+
+    <!-- Rotating orbit rings with glowing dots -->
+    <div class="hero-orbit orbit1"><div class="orbit-dot"></div></div>
+    <div class="hero-orbit orbit2"><div class="orbit-dot"></div></div>
+    <div class="hero-orbit orbit3"><div class="orbit-dot"></div></div>
+
+    <p class="eyebrow">Mission Control — Earth Orbit — Active</p>
+    <h1 class="hero-title">SPACE<br><span>CONTROL</span></h1>
+    <p class="hero-sub">
+      Commanding humanity's journey beyond Earth. Real-time telemetry, mission
+      orchestration, and the stories of those who dared to leave the atmosphere.
+    </p>
+
+    <div class="hero-cta">
+      <a href="#missions" class="btn-primary">View Missions</a>
+      <a href="#kalpana"  class="btn-ghost">Kalpana Chawla</a>
+    </div>
+
+    <div class="scroll-indicator">
+      <span>SCROLL</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       MISSION STATS BAR
+       ══════════════════════════════════════════════ -->
+  <div id="stats">
+    <div class="stats-grid">
+      <div class="stat-cell reveal">
+        <span class="stat-number" data-target="580">0</span>
+        <span class="stat-label">Humans to Space</span>
+      </div>
+      <div class="stat-cell reveal">
+        <span class="stat-number" data-target="273">0</span>
+        <span class="stat-label">Active Satellites</span>
+      </div>
+      <div class="stat-cell reveal">
+        <span class="stat-number" data-target="22">0</span>
+        <span class="stat-label">Ongoing Missions</span>
+      </div>
+      <div class="stat-cell reveal">
+        <span class="stat-number" data-target="384400">0</span>
+        <span class="stat-label">KM to the Moon</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       MISSIONS SECTION
+       ══════════════════════════════════════════════ -->
+  <section id="missions">
+    <p class="section-label reveal">Active Operations</p>
+    <h2 class="section-title reveal">Current <span>Missions</span></h2>
+    <div class="section-divider reveal"></div>
+
+    <div class="missions-grid">
+
+      <!-- Card 1 -->
+      <div class="mission-card reveal">
+        <span class="mission-icon">🛰️</span>
+        <h3 class="mission-title">Artemis Deep Survey</h3>
+        <p class="mission-desc">
+          Long-duration crewed mission charting lunar south pole resources for a
+          permanent habitat. Crew of four operating in 14-day surface rotation cycles.
+        </p>
+        <span class="mission-tag">Lunar — Active</span>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="mission-card amber reveal">
+        <span class="mission-icon">🔭</span>
+        <h3 class="mission-title">Webb-II Alignment</h3>
+        <p class="mission-desc">
+          Second-generation infrared space telescope entering final mirror calibration
+          at L2. First light targeting molecular clouds in the Carina Nebula.
+        </p>
+        <span class="mission-tag">L2 Orbit — Calibrating</span>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="mission-card crimson reveal">
+        <span class="mission-icon">🚀</span>
+        <h3 class="mission-title">Mars Relay Network</h3>
+        <p class="mission-desc">
+          Constellation of six relay satellites establishing continuous communication
+          coverage for the first crewed Mars transit expected in late 2031.
+        </p>
+        <span class="mission-tag">Mars Transfer — En Route</span>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="mission-card green reveal">
+        <span class="mission-icon">🌍</span>
+        <h3 class="mission-title">ISS Climate Watch</h3>
+        <p class="mission-desc">
+          Continuous Earth observation platform monitoring atmospheric CO₂
+          stratification and polar ice coverage at 6-hour intervals.
+        </p>
+        <span class="mission-tag">LEO — Operational</span>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="mission-card reveal">
+        <span class="mission-icon">⚡</span>
+        <h3 class="mission-title">Solar Wind Mapper</h3>
+        <p class="mission-desc">
+          Spacecraft stationed at L1 measuring solar wind particle density and
+          velocity, providing 45-minute advance warning for geomagnetic storm events.
+        </p>
+        <span class="mission-tag">L1 Halo — Monitoring</span>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="mission-card amber reveal">
+        <span class="mission-icon">🪐</span>
+        <h3 class="mission-title">Europa Plume Sample</h3>
+        <p class="mission-desc">
+          Flyby mission intercepting water vapor plumes erupting from Europa's
+          surface, analysing organic compounds for biosignature markers in the
+          Jovian system.
+        </p>
+        <span class="mission-tag">Jupiter System — Approach</span>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       KALPANA CHAWLA TRIBUTE SECTION
+       ══════════════════════════════════════════════ -->
+  <div id="kalpana">
+    <!-- Purple nebula background gradient -->
+    <div class="kalpana-bg"></div>
+    <!-- Dedicated star canvas for this section -->
+    <canvas class="kalpana-stars"></canvas>
+
+    <div class="kalpana-inner">
+
+      <!-- Portrait column -->
+      <div class="kalpana-portrait reveal">
+        <div class="portrait-frame">
+          <!-- Canvas-drawn illustrated portrait -->
+          <canvas class="portrait-canvas" id="kalpanaCanvas"></canvas>
+          <!-- CRT scanline overlay -->
+          <div class="portrait-scanlines"></div>
+        </div>
+
+        <!-- Mission badge -->
+        <div class="kalpana-badge">
+          <div class="badge-mission">Mission STS</div>
+          <span class="badge-number">STS-107</span>
+        </div>
+      </div>
+
+      <!-- Content column -->
+      <div class="kalpana-content reveal">
+        <p class="section-label">Pioneer — Astronaut — Icon</p>
+        <h2 class="section-title">Kalpana <span>Chawla</span></h2>
+        <div class="section-divider"></div>
+
+        <p class="kalpana-quote">
+          "The path from dreams to success does exist. May you have the vision to
+          find it, the courage to get onto it, and the perseverance to follow it."
+        </p>
+
+        <p class="kalpana-body">
+          Born in Karnal, India in 1962, Kalpana Chawla became the first woman of
+          Indian origin to travel to space. A mission specialist and robotic arm
+          operator, she flew aboard the Space Shuttle Columbia and logged over 376
+          hours in space across two missions. Her work in computational fluid
+          dynamics and her relentless pursuit of aerospace excellence made her a
+          role model for millions around the world.
+        </p>
+
+        <p class="kalpana-body">
+          On February 1, 2003, Columbia disintegrated during re-entry into Earth's
+          atmosphere. Kalpana Chawla and her six crewmates lost their lives. She
+          remains one of the most celebrated astronauts in history — a symbol of
+          scientific ambition and the courage to reach beyond every horizon.
+        </p>
+
+        <!-- Timeline -->
+        <div class="kalpana-timeline">
+          <div class="timeline-row">
+            <span class="t-year">1962</span>
+            <span class="t-event">Born in Karnal, Haryana, India</span>
+          </div>
+          <div class="timeline-row">
+            <span class="t-year">1984</span>
+            <span class="t-event">B.E. in Aeronautical Engineering, Punjab Engineering College</span>
+          </div>
+          <div class="timeline-row">
+            <span class="t-year">1988</span>
+            <span class="t-event">PhD in Aerospace Engineering, University of Colorado</span>
+          </div>
+          <div class="timeline-row">
+            <span class="t-year">1994</span>
+            <span class="t-event">Selected as NASA astronaut candidate</span>
+          </div>
+          <div class="timeline-row">
+            <span class="t-year">1997</span>
+            <span class="t-event">First spaceflight — STS-87, 376 hours in orbit</span>
+          </div>
+          <div class="timeline-row">
+            <span class="t-year">2003</span>
+            <span class="t-event">STS-107 — Columbia mission, final flight</span>
+          </div>
+        </div>
+
+        <div class="tribute-tag">✦ &nbsp; In Eternal Orbit Among the Stars</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       CONTROL ROOM SECTION
+       ══════════════════════════════════════════════ -->
+  <section id="control">
+    <p class="section-label reveal">Live Feed</p>
+    <h2 class="section-title reveal">Mission <span>Control Room</span></h2>
+    <div class="section-divider reveal"></div>
+
+    <div class="control-grid">
+
+      <!-- Telemetry panel -->
+      <div class="control-panel reveal">
+        <div class="panel-header">
+          <span class="panel-title">System Telemetry</span>
+          <span class="panel-live"><span class="status-dot"></span>Live</span>
+        </div>
+        <div class="telemetry-bars">
+
+          <div class="tel-row">
+            <span class="tel-label">Comms Link</span>
+            <div class="tel-track">
+              <div class="tel-fill" style="width:94%;animation-delay:0.2s"></div>
+            </div>
+            <span class="tel-value">94%</span>
+          </div>
+
+          <div class="tel-row">
+            <span class="tel-label">Power Array</span>
+            <div class="tel-track">
+              <div class="tel-fill green" style="width:88%;animation-delay:0.4s"></div>
+            </div>
+            <span class="tel-value" style="color:var(--green)">88%</span>
+          </div>
+
+          <div class="tel-row">
+            <span class="tel-label">Fuel Reserve</span>
+            <div class="tel-track">
+              <div class="tel-fill amber" style="width:61%;animation-delay:0.6s"></div>
+            </div>
+            <span class="tel-value" style="color:var(--amber)">61%</span>
+          </div>
+
+          <div class="tel-row">
+            <span class="tel-label">Thermal Shield</span>
+            <div class="tel-track">
+              <div class="tel-fill" style="width:99%;animation-delay:0.8s"></div>
+            </div>
+            <span class="tel-value">99%</span>
+          </div>
+
+          <div class="tel-row">
+            <span class="tel-label">Crew O₂</span>
+            <div class="tel-track">
+              <div class="tel-fill green" style="width:97%;animation-delay:1s"></div>
+            </div>
+            <span class="tel-value" style="color:var(--green)">97%</span>
+          </div>
+
+          <div class="tel-row">
+            <span class="tel-label">Data Uplink</span>
+            <div class="tel-track">
+              <div class="tel-fill crimson" style="width:43%;animation-delay:1.2s"></div>
+            </div>
+            <span class="tel-value" style="color:var(--crimson)">43%</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Mission log panel -->
+      <div class="control-panel reveal">
+        <div class="panel-header">
+          <span class="panel-title">Mission Log</span>
+          <span class="panel-live"><span class="status-dot"></span>Live</span>
+        </div>
+        <div class="mission-log" id="missionLog">
+          <div class="log-entry">
+            <span class="log-time">T+00:00:12</span>
+            <span class="log-msg ok">All systems nominal. Orbital insertion confirmed.</span>
+          </div>
+          <div class="log-entry">
+            <span class="log-time">T+00:04:38</span>
+            <span class="log-msg">Payload bay doors opened. Deploy sequence initiated.</span>
+          </div>
+          <div class="log-entry">
+            <span class="log-time">T+00:11:02</span>
+            <span class="log-msg warn">Solar panel 3B voltage fluctuation detected. Monitoring.</span>
+          </div>
+          <div class="log-entry">
+            <span class="log-time">T+00:15:47</span>
+            <span class="log-msg ok">EVA suit pressure checks passed. Crew ready.</span>
+          </div>
+          <div class="log-entry">
+            <span class="log-time">T+00:22:09</span>
+            <span class="log-msg">Robotic arm deployed. Satellite capture approach underway.</span>
+          </div>
+          <div class="log-entry">
+            <span class="log-time">T+00:31:55</span>
+            <span class="log-msg alert">Debris alert — minor trajectory correction executed.</span>
+          </div>
+          <div class="log-entry">
+            <span class="log-time">T+00:40:13</span>
+            <span class="log-msg ok">Satellite secured. Crew returning to airlock.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Radar panel — full width -->
+      <div class="control-panel wide reveal" style="padding:2.5rem;">
+        <div class="panel-header">
+          <span class="panel-title">Deep Space Communications Array — Real-time Signal Map</span>
+          <span class="panel-live"><span class="status-dot"></span>Tracking</span>
+        </div>
+        <canvas id="radarCanvas" style="width:100%;height:220px;display:block;"></canvas>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       SOLAR SYSTEM ORRERY
+       ══════════════════════════════════════════════ -->
+  <section id="solar" style="max-width:none;padding:6rem 3rem;">
+    <p class="section-label reveal">Interactive Orrery</p>
+    <h2 class="section-title reveal" style="text-align:center;">Our <span>Solar System</span></h2>
+    <div class="section-divider reveal" style="margin:0 auto 3rem;"></div>
+    <div class="solar-system-wrap">
+      <canvas class="solar-canvas" id="solarCanvas"></canvas>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       FOOTER
+       ══════════════════════════════════════════════ -->
+  <footer>
+    <div class="footer-logo">⬡ SPACE CONTROL</div>
+    <p class="footer-copy">© 2026 Space Control Command. All mission data is operational.</p>
+    <ul class="footer-links">
+      <li><a href="#">Mission Brief</a></li>
+      <li><a href="#">Crew Roster</a></li>
+      <li><a href="#">Contact Ground</a></li>
+    </ul>
+  </footer>
+
+
+  <!-- External JavaScript — loaded last for DOM availability -->
+  <script src="main.js"></script>
+
+</body>
+</html>
