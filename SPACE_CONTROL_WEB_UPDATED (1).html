@@ -1,0 +1,3671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPACE CONTROL — Mission Command</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap');
+
+  :root {
+    --void: #020510;
+    --deep: #060d1f;
+    --panel: #0a1628;
+    --grid: #0e1e38;
+    --cyan: #00f5ff;
+    --pulse: #00bfff;
+    --amber: #ffaa00;
+    --crimson: #ff3860;
+    --green: #00ff88;
+    --dim: rgba(0,245,255,0.08);
+    --glow: 0 0 20px rgba(0,245,255,0.5);
+    --glow-strong: 0 0 40px rgba(0,245,255,0.8);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: #c8e0ff;
+    font-family: 'Exo 2', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── STARFIELD ── */
+  #starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 3rem;
+    background: linear-gradient(180deg, rgba(2,5,16,0.95) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(0,245,255,0.1);
+    backdrop-filter: blur(6px);
+  }
+
+  .nav-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--cyan);
+    letter-spacing: 0.25em;
+    text-shadow: var(--glow);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: rgba(200,224,255,0.6);
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+
+  .nav-links a:hover {
+    color: var(--cyan);
+    text-shadow: var(--glow);
+  }
+
+  .nav-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--green);
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: blink 1.4s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridPulse 6s ease-in-out infinite;
+  }
+
+  @keyframes gridPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+  .hero-orbit {
+    position: absolute;
+    border: 1px solid rgba(0,245,255,0.08);
+    border-radius: 50%;
+    animation: spin linear infinite;
+  }
+  .orbit1 { width:500px; height:500px; top:50%; left:50%; transform:translate(-50%,-50%); animation-duration: 30s; }
+  .orbit2 { width:750px; height:750px; top:50%; left:50%; transform:translate(-50%,-50%); animation-duration: 50s; animation-direction: reverse; }
+  .orbit3 { width:1100px; height:1100px; top:50%; left:50%; transform:translate(-50%,-50%); animation-duration: 80s; }
+
+  @keyframes spin { from{transform:translate(-50%,-50%) rotate(0deg)} to{transform:translate(-50%,-50%) rotate(360deg)} }
+
+  .orbit-dot {
+    position: absolute;
+    width: 8px; height: 8px;
+    background: var(--cyan);
+    border-radius: 50%;
+    top: -4px; left: 50%;
+    margin-left: -4px;
+    box-shadow: 0 0 10px var(--cyan);
+  }
+
+  .orbit2 .orbit-dot { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+  .orbit3 .orbit-dot { background: var(--crimson); box-shadow: 0 0 10px var(--crimson); }
+
+  .eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.4em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 1s 0.3s forwards;
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2.8rem, 8vw, 7rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    color: #fff;
+    text-shadow: 0 0 80px rgba(0,245,255,0.3);
+    opacity: 0;
+    animation: fadeUp 1s 0.6s forwards;
+  }
+
+  .hero-title span {
+    color: var(--cyan);
+    text-shadow: var(--glow-strong);
+  }
+
+  .hero-sub {
+    margin-top: 1.5rem;
+    font-family: 'Exo 2', sans-serif;
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    font-weight: 300;
+    color: rgba(200,224,255,0.65);
+    max-width: 550px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 1s 0.9s forwards;
+  }
+
+  .hero-cta {
+    margin-top: 3rem;
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeUp 1s 1.2s forwards;
+  }
+
+  .btn-primary {
+    padding: 0.85rem 2.4rem;
+    background: transparent;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s, box-shadow 0.3s;
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--cyan);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+    z-index: -1;
+  }
+
+  .btn-primary:hover { color: var(--void); box-shadow: var(--glow); }
+  .btn-primary:hover::before { transform: scaleX(1); }
+
+  .btn-ghost {
+    padding: 0.85rem 2.4rem;
+    background: transparent;
+    border: 1px solid rgba(200,224,255,0.2);
+    color: rgba(200,224,255,0.6);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.3s, color 0.3s;
+  }
+
+  .btn-ghost:hover { border-color: rgba(200,224,255,0.5); color: #fff; }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(30px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.4;
+    animation: float 2s ease-in-out infinite;
+  }
+
+  .scroll-indicator span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--cyan);
+  }
+
+  .scroll-arrow {
+    width: 1px; height: 40px;
+    background: linear-gradient(180deg, var(--cyan), transparent);
+  }
+
+  @keyframes float { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+
+  /* ── SECTION BASE ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 3rem;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    opacity: 0.7;
+  }
+
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 1rem;
+    line-height: 1.15;
+  }
+
+  .section-title span { color: var(--cyan); }
+
+  .section-divider {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, var(--cyan), transparent);
+    margin-bottom: 3rem;
+  }
+
+  /* ── MISSION STATS ── */
+  #stats {
+    padding: 4rem 3rem;
+    background: linear-gradient(180deg, transparent, rgba(0,245,255,0.03) 50%, transparent);
+    border-top: 1px solid rgba(0,245,255,0.07);
+    border-bottom: 1px solid rgba(0,245,255,0.07);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    max-width: 1300px;
+    margin: 0 auto;
+    background: rgba(0,245,255,0.05);
+  }
+
+  .stat-cell {
+    background: var(--deep);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .stat-cell:hover { background: var(--grid); }
+
+  .stat-cell::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s;
+  }
+
+  .stat-cell:hover::before { transform: scaleX(1); }
+
+  .stat-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 900;
+    color: var(--cyan);
+    text-shadow: var(--glow);
+    display: block;
+    counter-reset: none;
+  }
+
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: rgba(200,224,255,0.45);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-top: 0.4rem;
+    display: block;
+  }
+
+  /* ── MISSIONS ── */
+  .missions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5px;
+    background: rgba(0,245,255,0.05);
+  }
+
+  .mission-card {
+    background: var(--deep);
+    padding: 2.5rem 2rem;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+    overflow: hidden;
+  }
+
+  .mission-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--cyan);
+    transform: scaleY(0);
+    transition: transform 0.3s;
+    transform-origin: bottom;
+  }
+
+  .mission-card:hover { background: var(--grid); }
+  .mission-card:hover::after { transform: scaleY(1); }
+  .mission-card.amber::after { background: var(--amber); }
+  .mission-card.crimson::after { background: var(--crimson); }
+  .mission-card.green::after { background: var(--green); }
+
+  .mission-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.2rem;
+    display: block;
+  }
+
+  .mission-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+
+  .mission-desc {
+    font-size: 0.88rem;
+    color: rgba(200,224,255,0.55);
+    line-height: 1.7;
+  }
+
+  .mission-tag {
+    display: inline-block;
+    margin-top: 1.2rem;
+    padding: 0.25rem 0.75rem;
+    border: 1px solid rgba(0,245,255,0.3);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .mission-card.amber .mission-tag { border-color: rgba(255,170,0,0.3); color: var(--amber); }
+  .mission-card.crimson .mission-tag { border-color: rgba(255,56,96,0.3); color: var(--crimson); }
+  .mission-card.green .mission-tag { border-color: rgba(0,255,136,0.3); color: var(--green); }
+
+  /* ── KALPANA CHAWLA ── */
+  #kalpana {
+    position: relative;
+    z-index: 1;
+    padding: 8rem 3rem;
+    overflow: hidden;
+    background: none;
+    max-width: none;
+  }
+
+  .kalpana-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(100,0,200,0.12) 0%, transparent 70%),
+      linear-gradient(180deg, transparent 0%, rgba(6,4,20,0.95) 100%);
+    z-index: 0;
+  }
+
+  .kalpana-stars {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .kalpana-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 6rem;
+    align-items: center;
+  }
+
+  .kalpana-portrait {
+    position: relative;
+  }
+
+  .portrait-frame {
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 3/4;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .portrait-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(180,120,255,0.4);
+    z-index: 2;
+  }
+
+  .portrait-frame::after {
+    content: '';
+    position: absolute;
+    top: 12px; left: 12px; right: -12px; bottom: -12px;
+    border: 1px solid rgba(180,120,255,0.15);
+    z-index: 0;
+  }
+
+  .portrait-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .portrait-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    filter: saturate(0.85) contrast(1.05);
+  }
+
+  .portrait-scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .kalpana-badge {
+    position: absolute;
+    bottom: -1.5rem;
+    right: -1rem;
+    background: var(--deep);
+    border: 1px solid rgba(180,120,255,0.4);
+    padding: 1rem 1.5rem;
+    z-index: 10;
+  }
+
+  .badge-mission {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(200,224,255,0.5);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .badge-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #b478ff;
+    text-shadow: 0 0 20px rgba(180,120,255,0.6);
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  .kalpana-content .section-label { color: #b478ff; }
+  .kalpana-content .section-title span { color: #b478ff; text-shadow: 0 0 20px rgba(180,120,255,0.5); }
+  .kalpana-content .section-divider { background: linear-gradient(90deg, #b478ff, transparent); }
+
+  .kalpana-quote {
+    font-family: 'Exo 2', sans-serif;
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(200,224,255,0.85);
+    line-height: 1.8;
+    border-left: 3px solid #b478ff;
+    padding-left: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .kalpana-body {
+    font-size: 0.95rem;
+    color: rgba(200,224,255,0.6);
+    line-height: 1.85;
+    margin-bottom: 2rem;
+  }
+
+  .kalpana-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 2.5rem;
+    background: rgba(180,120,255,0.1);
+  }
+
+  .timeline-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    background: var(--deep);
+    transition: background 0.2s;
+  }
+
+  .timeline-row:hover { background: var(--grid); }
+
+  .t-year {
+    padding: 1rem 1rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #b478ff;
+    border-right: 1px solid rgba(180,120,255,0.15);
+    display: flex;
+    align-items: center;
+  }
+
+  .t-event {
+    padding: 1rem 1.25rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: rgba(200,224,255,0.65);
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.04em;
+  }
+
+  .tribute-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding: 0.5rem 1.2rem;
+    background: rgba(180,120,255,0.08);
+    border: 1px solid rgba(180,120,255,0.3);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: #b478ff;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* ── CONTROL ROOM ── */
+  .control-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    background: rgba(0,245,255,0.05);
+  }
+
+  .control-panel {
+    background: var(--deep);
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .control-panel.wide { grid-column: span 2; }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0,245,255,0.08);
+  }
+
+  .panel-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--cyan);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+
+  .panel-live {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .telemetry-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .tel-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 50px;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .tel-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(200,224,255,0.5);
+    letter-spacing: 0.1em;
+  }
+
+  .tel-track {
+    height: 4px;
+    background: rgba(0,245,255,0.08);
+    border-radius: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .tel-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), #0080ff);
+    border-radius: 0;
+    animation: barLoad 2s ease forwards;
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+
+  .tel-fill.amber { background: linear-gradient(90deg, var(--amber), #ff6600); }
+  .tel-fill.green { background: linear-gradient(90deg, var(--green), #00aa55); }
+  .tel-fill.crimson { background: linear-gradient(90deg, var(--crimson), #aa0030); }
+
+  @keyframes barLoad { to { transform: scaleX(1); } }
+
+  .tel-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--cyan);
+    text-align: right;
+  }
+
+  .mission-log {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .log-entry {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 1rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0,245,255,0.04);
+  }
+
+  .log-time { color: rgba(0,245,255,0.4); }
+  .log-msg { color: rgba(200,224,255,0.6); }
+  .log-msg.warn { color: var(--amber); }
+  .log-msg.ok { color: var(--green); }
+  .log-msg.alert { color: var(--crimson); }
+
+  /* ── PLANETS ── */
+  #solar {
+    padding: 6rem 3rem;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .solar-system-wrap {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    margin-top: 3rem;
+    overflow: hidden;
+  }
+
+  .solar-canvas { width: 100%; height: 100%; }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 3rem;
+    border-top: 1px solid rgba(0,245,255,0.07);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(6,13,31,0.8);
+  }
+
+  .footer-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: var(--cyan);
+    letter-spacing: 0.2em;
+  }
+
+  .footer-copy {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(200,224,255,0.3);
+    letter-spacing: 0.1em;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+  }
+
+  .footer-links a {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(200,224,255,0.3);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    transition: color 0.3s;
+  }
+
+  .footer-links a:hover { color: var(--cyan); }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── ISRO & NASA SECTIONS ── */
+  .agency-section {
+    position: relative;
+    z-index: 1;
+    padding: 8rem 3rem;
+    overflow: hidden;
+    background: none;
+    max-width: none;
+  }
+
+  .agency-bg-isro {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,136,0,0.08) 0%, transparent 70%),
+      linear-gradient(180deg, transparent 0%, rgba(6,4,20,0.95) 100%);
+    z-index: 0;
+  }
+
+  .agency-bg-nasa {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,100,200,0.1) 0%, transparent 70%),
+      linear-gradient(180deg, transparent 0%, rgba(6,4,20,0.95) 100%);
+    z-index: 0;
+  }
+
+  .agency-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 6rem;
+    align-items: center;
+  }
+
+  .agency-inner.reverse {
+    grid-template-columns: 1.2fr 1fr;
+  }
+
+  .agency-inner.reverse .agency-portrait { order: 2; }
+  .agency-inner.reverse .agency-content { order: 1; }
+
+  .agency-portrait { position: relative; }
+
+  .agency-frame {
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 3/4;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .agency-frame.isro::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(255,136,0,0.4);
+    z-index: 2;
+  }
+
+  .agency-frame.isro::after {
+    content: '';
+    position: absolute;
+    top: 12px; left: 12px; right: -12px; bottom: -12px;
+    border: 1px solid rgba(255,136,0,0.15);
+    z-index: 0;
+  }
+
+  .agency-frame.nasa::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(0,150,255,0.4);
+    z-index: 2;
+  }
+
+  .agency-frame.nasa::after {
+    content: '';
+    position: absolute;
+    top: 12px; left: 12px; right: -12px; bottom: -12px;
+    border: 1px solid rgba(0,150,255,0.15);
+    z-index: 0;
+  }
+
+  .agency-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    filter: saturate(0.9) contrast(1.05);
+  }
+
+  .agency-scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .agency-badge-isro {
+    position: absolute;
+    bottom: -1.5rem;
+    right: -1rem;
+    background: var(--deep);
+    border: 1px solid rgba(255,136,0,0.4);
+    padding: 1rem 1.5rem;
+    z-index: 10;
+  }
+
+  .agency-badge-nasa {
+    position: absolute;
+    bottom: -1.5rem;
+    right: -1rem;
+    background: var(--deep);
+    border: 1px solid rgba(0,150,255,0.4);
+    padding: 1rem 1.5rem;
+    z-index: 10;
+  }
+
+  .badge-role {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(200,224,255,0.5);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .badge-name-isro {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #ff8800;
+    text-shadow: 0 0 20px rgba(255,136,0,0.6);
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  .badge-name-nasa {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #0096ff;
+    text-shadow: 0 0 20px rgba(0,150,255,0.6);
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  /* ISRO content accent */
+  .agency-content.isro .section-label { color: #ff8800; }
+  .agency-content.isro .section-title span { color: #ff8800; text-shadow: 0 0 20px rgba(255,136,0,0.5); }
+  .agency-content.isro .section-divider { background: linear-gradient(90deg, #ff8800, transparent); }
+  .agency-content.isro .agency-quote { border-left-color: #ff8800; }
+
+  /* NASA content accent */
+  .agency-content.nasa .section-label { color: #0096ff; }
+  .agency-content.nasa .section-title span { color: #0096ff; text-shadow: 0 0 20px rgba(0,150,255,0.5); }
+  .agency-content.nasa .section-divider { background: linear-gradient(90deg, #0096ff, transparent); }
+  .agency-content.nasa .agency-quote { border-left-color: #0096ff; }
+
+  .agency-quote {
+    font-family: 'Exo 2', sans-serif;
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(200,224,255,0.85);
+    line-height: 1.8;
+    border-left: 3px solid;
+    padding-left: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .agency-body {
+    font-size: 0.95rem;
+    color: rgba(200,224,255,0.6);
+    line-height: 1.85;
+    margin-bottom: 1.5rem;
+  }
+
+  .agency-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(0,245,255,0.05);
+    margin-top: 2.5rem;
+  }
+
+  .agency-stat-isro { background: rgba(255,136,0,0.05); }
+  .agency-stat-nasa { background: rgba(0,150,255,0.05); }
+
+  .agency-stat-cell {
+    padding: 1.25rem 1rem;
+    text-align: center;
+    background: var(--deep);
+    transition: background 0.3s;
+  }
+
+  .agency-stat-cell:hover { background: var(--grid); }
+
+  .agency-stat-num-isro {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #ff8800;
+    text-shadow: 0 0 15px rgba(255,136,0,0.5);
+    display: block;
+  }
+
+  .agency-stat-num-nasa {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #0096ff;
+    text-shadow: 0 0 15px rgba(0,150,255,0.5);
+    display: block;
+  }
+
+  .agency-stat-lbl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(200,224,255,0.4);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 0.3rem;
+    display: block;
+  }
+
+  .agency-tag-isro {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding: 0.5rem 1.2rem;
+    background: rgba(255,136,0,0.08);
+    border: 1px solid rgba(255,136,0,0.3);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: #ff8800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .agency-tag-nasa {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding: 0.5rem 1.2rem;
+    background: rgba(0,150,255,0.08);
+    border: 1px solid rgba(0,150,255,0.3);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: #0096ff;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .achievement-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 1.5rem;
+    background: rgba(0,245,255,0.04);
+  }
+
+  .achievement-row {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 0.75rem;
+    align-items: start;
+    background: var(--deep);
+    padding: 0.85rem 1rem;
+    transition: background 0.2s;
+  }
+
+  .achievement-row:hover { background: var(--grid); }
+
+  .ach-icon {
+    font-size: 0.95rem;
+    margin-top: 1px;
+  }
+
+  .ach-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: rgba(200,224,255,0.65);
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 900px) {
+    .agency-inner { grid-template-columns: 1fr; gap: 3rem; }
+    .agency-inner.reverse .agency-portrait { order: 1; }
+    .agency-inner.reverse .agency-content { order: 2; }
+    .agency-stats { grid-template-columns: repeat(3,1fr); }
+  }
+
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+    .missions-grid { grid-template-columns: 1fr; }
+    .kalpana-inner { grid-template-columns: 1fr; gap: 3rem; }
+    .control-grid { grid-template-columns: 1fr; }
+    .control-panel.wide { grid-column: span 1; }
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    section { padding: 4rem 1.5rem; }
+    footer { flex-direction: column; gap: 1rem; text-align: center; }
+  }
+
+  /* ── ANIMATED AGENCY NAME FRAMES ── */
+  .animated-name-frame {
+    background: var(--deep) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible !important;
+  }
+
+  .animated-agency-name {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem;
+    overflow: hidden;
+  }
+
+  .anim-name-letters {
+    display: flex;
+    gap: 0.3rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .anim-letter {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: 900;
+    color: #ff8800;
+    text-shadow: 0 0 30px rgba(255,136,0,0.8), 0 0 60px rgba(255,136,0,0.4);
+    animation: letterPulse 2s ease-in-out infinite;
+    animation-delay: calc(var(--i) * 0.2s);
+    display: inline-block;
+  }
+
+  .nasa-letter {
+    color: #0096ff;
+    text-shadow: 0 0 30px rgba(0,150,255,0.8), 0 0 60px rgba(0,150,255,0.4);
+  }
+
+  @keyframes letterPulse {
+    0%,100% { transform: translateY(0) scale(1); filter: brightness(1); }
+    50% { transform: translateY(-6px) scale(1.08); filter: brightness(1.4); }
+  }
+
+  .anim-name-full {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(255,136,0,0.7);
+    letter-spacing: 0.08em;
+    text-align: center;
+    line-height: 1.5;
+    position: relative;
+    z-index: 2;
+  }
+
+  .anim-name-est {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: rgba(255,136,0,0.4);
+    letter-spacing: 0.15em;
+    position: relative;
+    z-index: 2;
+  }
+
+  .anim-orbit-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255,136,0,0.15);
+    animation: spin linear infinite;
+  }
+
+  .ring-isro-1 { width: 160px; height: 160px; top:50%; left:50%; transform:translate(-50%,-50%); animation-duration: 8s; }
+  .ring-isro-2 { width: 260px; height: 260px; top:50%; left:50%; transform:translate(-50%,-50%); animation-duration: 14s; animation-direction:reverse; }
+  .ring-nasa-1 { width: 160px; height: 160px; top:50%; left:50%; transform:translate(-50%,-50%); animation-duration: 8s; border-color: rgba(0,150,255,0.15); }
+  .ring-nasa-2 { width: 260px; height: 260px; top:50%; left:50%; transform:translate(-50%,-50%); animation-duration: 14s; animation-direction:reverse; border-color: rgba(0,150,255,0.15); }
+
+  .anim-orbit-dot {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #ff8800;
+    box-shadow: 0 0 12px rgba(255,136,0,0.9);
+    top: calc(50% - 80px - 4px);
+    left: calc(50% - 4px);
+    transform-origin: 4px 84px;
+    animation: dotSpin 8s linear infinite;
+  }
+
+  .dot-nasa {
+    background: #0096ff;
+    box-shadow: 0 0 12px rgba(0,150,255,0.9);
+  }
+
+  @keyframes dotSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* ── PLANETS SECTION ── */
+  #planets {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 3rem;
+    max-width: none;
+    overflow: hidden;
+  }
+
+  .planets-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 50%, rgba(0,100,200,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(200,100,0,0.06) 0%, transparent 60%);
+    z-index: 0;
+  }
+
+  .planets-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  .planets-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5px;
+    background: rgba(0,245,255,0.04);
+    margin-top: 3rem;
+  }
+
+  .planet-card {
+    background: var(--deep);
+    padding: 2rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+  }
+
+  .planet-card:hover {
+    background: var(--grid);
+    transform: translateY(-2px);
+  }
+
+  .planet-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--planet-color, var(--cyan));
+    box-shadow: 0 0 12px var(--planet-color, var(--cyan));
+    transform: scaleX(0);
+    transition: transform 0.4s;
+  }
+
+  .planet-card:hover::before { transform: scaleX(1); }
+
+  .planet-ball-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.2rem;
+    height: 70px;
+  }
+
+  .planet-ball {
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 0 20px var(--planet-color, var(--cyan));
+    animation: planetFloat 3s ease-in-out infinite;
+    animation-delay: var(--float-delay, 0s);
+  }
+
+  @keyframes planetFloat {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .planet-ring-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .planet-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px solid rgba(221,184,106,0.5);
+    width: 110%;
+    height: 35%;
+    pointer-events: none;
+  }
+
+  .planet-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+
+  .planet-type {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--planet-color, var(--cyan));
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+
+  .planet-data {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .pd-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(0,245,255,0.04);
+  }
+
+  .pd-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: rgba(200,224,255,0.35);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .pd-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    color: rgba(200,224,255,0.8);
+    text-align: right;
+  }
+
+  .pd-value.highlight {
+    color: var(--planet-color, var(--cyan));
+    font-weight: 700;
+  }
+
+  .planet-desc {
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    color: rgba(200,224,255,0.45);
+    line-height: 1.65;
+  }
+
+  .planet-order-badge {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 900;
+    color: var(--planet-color, var(--cyan));
+    opacity: 0.4;
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 1100px) { .planets-grid { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 600px)  { .planets-grid { grid-template-columns: 1fr; } }
+
+  /* ══════════════════════════════════════════
+     SUN · MOON · ASTEROIDS · METEORS SECTION
+  ══════════════════════════════════════════ */
+  #cosmic {
+    position: relative;
+    z-index: 1;
+    padding: 0;
+    max-width: none;
+    overflow: hidden;
+  }
+
+  /* ─── SUN HERO BLOCK ─── */
+  .sun-block {
+    position: relative;
+    padding: 7rem 3rem;
+    overflow: hidden;
+    background: radial-gradient(ellipse 70% 80% at 15% 50%, rgba(255,120,0,0.18) 0%, transparent 65%),
+                radial-gradient(ellipse 40% 60% at 0% 50%, rgba(255,200,0,0.10) 0%, transparent 50%),
+                linear-gradient(180deg, rgba(2,5,16,0) 0%, rgba(6,4,20,0.96) 100%);
+  }
+
+  .sun-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 480px 1fr;
+    gap: 5rem;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .sun-canvas-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 1;
+  }
+
+  #sunCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 50%;
+  }
+
+  .sun-content .section-label  { color: #ffaa00; }
+  .sun-content .section-title span { color: #ffaa00; text-shadow: 0 0 30px rgba(255,170,0,0.6); }
+  .sun-content .section-divider { background: linear-gradient(90deg,#ffaa00,transparent); }
+
+  .sun-fact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(255,170,0,0.08);
+    margin-top: 2rem;
+  }
+
+  .sun-fact-cell {
+    background: var(--deep);
+    padding: 1.1rem 1.25rem;
+    transition: background 0.25s;
+  }
+  .sun-fact-cell:hover { background: var(--grid); }
+
+  .sfc-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: rgba(255,170,0,0.45);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+  .sfc-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ffaa00;
+    text-shadow: 0 0 10px rgba(255,170,0,0.4);
+  }
+
+  .sun-desc {
+    font-size: 0.92rem;
+    color: rgba(200,224,255,0.6);
+    line-height: 1.85;
+    margin-bottom: 1.2rem;
+  }
+
+  .sun-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: rgba(255,170,0,0.06);
+    margin-top: 2rem;
+  }
+  .sun-layer-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    background: var(--deep);
+    transition: background 0.2s;
+  }
+  .sun-layer-row:hover { background: var(--grid); }
+  .slr-name {
+    padding: 0.8rem 1rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #ffaa00;
+    border-right: 1px solid rgba(255,170,0,0.1);
+    display: flex; align-items: center;
+  }
+  .slr-desc {
+    padding: 0.8rem 1.25rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(200,224,255,0.55);
+    display: flex; align-items: center;
+    letter-spacing: 0.03em;
+  }
+
+  /* ─── MOON BLOCK ─── */
+  .moon-block {
+    position: relative;
+    padding: 7rem 3rem;
+    overflow: hidden;
+    background: radial-gradient(ellipse 70% 80% at 85% 50%, rgba(160,180,220,0.12) 0%, transparent 65%),
+                linear-gradient(180deg, rgba(6,4,20,0.96) 0%, rgba(2,5,16,0) 100%);
+    border-top: 1px solid rgba(0,245,255,0.06);
+  }
+
+  .moon-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 5rem;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .moon-canvas-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 1;
+    margin: 0 auto;
+  }
+
+  #moonCanvas { width:100%; height:100%; display:block; }
+
+  .moon-content .section-label  { color: #aac4f0; }
+  .moon-content .section-title span { color: #aac4f0; text-shadow: 0 0 20px rgba(170,196,240,0.5); }
+  .moon-content .section-divider { background: linear-gradient(90deg,#aac4f0,transparent); }
+
+  .moon-phase-row {
+    display: flex;
+    gap: 1px;
+    background: rgba(170,196,240,0.08);
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+  .moon-phase-cell {
+    flex: 1;
+    min-width: 80px;
+    background: var(--deep);
+    padding: 1rem 0.75rem;
+    text-align: center;
+    transition: background 0.25s;
+    cursor: default;
+  }
+  .moon-phase-cell:hover { background: var(--grid); }
+  .mpc-icon { font-size: 1.5rem; display:block; margin-bottom:0.4rem; }
+  .mpc-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: rgba(170,196,240,0.55);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .moon-fact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(170,196,240,0.08);
+    margin-top: 1.5rem;
+  }
+  .moon-fact-cell { background: var(--deep); padding: 1rem 1.25rem; transition: background 0.25s; }
+  .moon-fact-cell:hover { background: var(--grid); }
+  .mfc-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: rgba(170,196,240,0.4);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+  .mfc-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #aac4f0;
+    text-shadow: 0 0 8px rgba(170,196,240,0.35);
+  }
+
+  /* ─── ASTEROIDS & METEORS BLOCK ─── */
+  .rocks-block {
+    position: relative;
+    padding: 7rem 3rem 5rem;
+    overflow: hidden;
+    border-top: 1px solid rgba(0,245,255,0.06);
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,56,96,0.05) 0%, transparent 60%);
+  }
+
+  .rocks-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  #meteorCanvas {
+    width: 100%;
+    height: 260px;
+    display: block;
+    margin: 2rem 0;
+    border: 1px solid rgba(255,56,96,0.08);
+    background: rgba(6,13,31,0.5);
+  }
+
+  .rocks-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    background: rgba(255,56,96,0.05);
+    margin-top: 2rem;
+  }
+
+  .rocks-panel {
+    background: var(--deep);
+    padding: 2.5rem 2rem;
+  }
+
+  .rocks-panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .rocks-panel-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--crimson);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0.7;
+  }
+
+  .asteroid-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: rgba(255,56,96,0.05);
+  }
+
+  .asteroid-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    background: var(--deep);
+    padding: 0.9rem 1rem;
+    transition: background 0.2s;
+  }
+  .asteroid-row:hover { background: var(--grid); }
+
+  .ar-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--crimson);
+    opacity: 0.6;
+  }
+  .ar-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: rgba(200,224,255,0.75);
+    letter-spacing: 0.04em;
+  }
+  .ar-name small {
+    display: block;
+    font-size: 0.6rem;
+    color: rgba(200,224,255,0.35);
+    margin-top: 0.15rem;
+    letter-spacing: 0.06em;
+  }
+  .ar-size {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--amber);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .meteor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: rgba(0,245,255,0.04);
+  }
+
+  .meteor-row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    background: var(--deep);
+    padding: 0.9rem 1rem;
+    transition: background 0.2s;
+  }
+  .meteor-row:hover { background: var(--grid); }
+
+  .mr-icon { font-size: 1rem; }
+  .mr-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: rgba(200,224,255,0.75);
+  }
+  .mr-name small {
+    display: block;
+    font-size: 0.6rem;
+    color: rgba(200,224,255,0.35);
+    margin-top: 0.15rem;
+  }
+  .mr-peak {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.63rem;
+    font-weight: 700;
+    color: var(--cyan);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .rocks-desc {
+    font-size: 0.9rem;
+    color: rgba(200,224,255,0.55);
+    line-height: 1.8;
+    margin-bottom: 1rem;
+  }
+
+  .near-earth-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    background: rgba(255,56,96,0.07);
+    border: 1px solid rgba(255,56,96,0.3);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--crimson);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 1.5rem;
+  }
+
+  .cosmic-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,170,0,0.2) 20%, rgba(0,245,255,0.2) 50%, rgba(170,196,240,0.2) 80%, transparent);
+    margin: 0;
+  }
+
+  @media (max-width: 900px) {
+    .sun-inner { grid-template-columns: 1fr; gap: 3rem; }
+    .moon-inner { grid-template-columns: 1fr; gap: 3rem; }
+    .rocks-two-col { grid-template-columns: 1fr; }
+    .sun-fact-grid { grid-template-columns: 1fr 1fr; }
+    .moon-fact-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- STARFIELD CANVAS -->
+<canvas id="starfield"></canvas>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">⬡ SPACE CONTROL</div>
+  <ul class="nav-links">
+    <li><a href="#missions">Missions</a></li>
+    <li><a href="#kalpana">Kalpana Chawla</a></li>
+    <li><a href="#isro">ISRO</a></li>
+    <li><a href="#nasa">NASA</a></li>
+    <li><a href="#control">Control Room</a></li>
+    <li><a href="#planets">Planets</a></li>
+    <li><a href="#cosmic">Sun & Moon</a></li>
+    <li><a href="#solar">Solar System</a></li>
+  </ul>
+  <div class="nav-status"><div class="status-dot"></div>ALL SYSTEMS NOMINAL</div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-orbit orbit1"><div class="orbit-dot"></div></div>
+  <div class="hero-orbit orbit2"><div class="orbit-dot"></div></div>
+  <div class="hero-orbit orbit3"><div class="orbit-dot"></div></div>
+
+  <p class="eyebrow">Mission Control — Earth Orbit — Active</p>
+  <h1 class="hero-title">SPACE<br><span>CONTROL</span></h1>
+  <p class="hero-sub">Commanding humanity's journey beyond Earth. Real-time telemetry, mission orchestration, and the stories of those who dared to leave the atmosphere.</p>
+  <div class="hero-cta">
+    <a href="#missions" class="btn-primary">View Missions</a>
+    <a href="#kalpana" class="btn-ghost">Kalpana Chawla</a>
+  </div>
+
+  <div class="scroll-indicator">
+    <span>SCROLL</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div id="stats">
+  <div class="stats-grid">
+    <div class="stat-cell reveal">
+      <span class="stat-number" data-target="580">0</span>
+      <span class="stat-label">Humans to Space</span>
+    </div>
+    <div class="stat-cell reveal">
+      <span class="stat-number" data-target="273">0</span>
+      <span class="stat-label">Active Satellites</span>
+    </div>
+    <div class="stat-cell reveal">
+      <span class="stat-number" data-target="22">0</span>
+      <span class="stat-label">Ongoing Missions</span>
+    </div>
+    <div class="stat-cell reveal">
+      <span class="stat-number" data-target="384400">0</span>
+      <span class="stat-label">KM to the Moon</span>
+    </div>
+  </div>
+</div>
+
+<!-- MISSIONS -->
+<section id="missions">
+  <p class="section-label reveal">Active Operations</p>
+  <h2 class="section-title reveal">Current <span>Missions</span></h2>
+  <div class="section-divider reveal"></div>
+  <div class="missions-grid">
+    <div class="mission-card reveal">
+      <span class="mission-icon">🛰️</span>
+      <h3 class="mission-title">Artemis Deep Survey</h3>
+      <p class="mission-desc">Long-duration crewed mission charting lunar south pole resources for a permanent habitat. Crew of four operating in 14-day surface rotation cycles.</p>
+      <span class="mission-tag">Lunar — Active</span>
+    </div>
+    <div class="mission-card amber reveal">
+      <span class="mission-icon">🔭</span>
+      <h3 class="mission-title">Webb-II Alignment</h3>
+      <p class="mission-desc">Second-generation infrared space telescope entering final mirror calibration at L2. First light targeting molecular clouds in the Carina Nebula.</p>
+      <span class="mission-tag">L2 Orbit — Calibrating</span>
+    </div>
+    <div class="mission-card crimson reveal">
+      <span class="mission-icon">🚀</span>
+      <h3 class="mission-title">Mars Relay Network</h3>
+      <p class="mission-desc">Constellation of six relay satellites establishing continuous communication coverage for the first crewed Mars transit expected in late 2031.</p>
+      <span class="mission-tag">Mars Transfer — En Route</span>
+    </div>
+    <div class="mission-card green reveal">
+      <span class="mission-icon">🌍</span>
+      <h3 class="mission-title">ISS Climate Watch</h3>
+      <p class="mission-desc">Continuous Earth observation platform monitoring atmospheric CO₂ stratification and polar ice coverage at 6-hour intervals.</p>
+      <span class="mission-tag">LEO — Operational</span>
+    </div>
+    <div class="mission-card reveal">
+      <span class="mission-icon">⚡</span>
+      <h3 class="mission-title">Solar Wind Mapper</h3>
+      <p class="mission-desc">Spacecraft stationed at L1 measuring solar wind particle density and velocity, providing 45-minute advance warning for geomagnetic storm events.</p>
+      <span class="mission-tag">L1 Halo — Monitoring</span>
+    </div>
+    <div class="mission-card amber reveal">
+      <span class="mission-icon">🪐</span>
+      <h3 class="mission-title">Europa Plume Sample</h3>
+      <p class="mission-desc">Flyby mission intercepting water vapor plumes erupting from Europa's surface, analysing organic compounds for biosignature markers in the Jovian system.</p>
+      <span class="mission-tag">Jupiter System — Approach</span>
+    </div>
+  </div>
+</section>
+
+<!-- KALPANA CHAWLA -->
+<div id="kalpana">
+  <div class="kalpana-bg"></div>
+  <canvas class="kalpana-stars"></canvas>
+  <div class="kalpana-inner">
+    <div class="kalpana-portrait reveal">
+      <div class="portrait-frame">
+        <img
+          class="portrait-photo"
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Kalpana_Chawla%2C_NASA_photo_portrait_in_orange_suit.jpg/800px-Kalpana_Chawla%2C_NASA_photo_portrait_in_orange_suit.jpg"
+          alt="Kalpana Chawla — NASA Mission Specialist"
+          onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Kalpana_Chawla.jpg/800px-Kalpana_Chawla.jpg';"
+        />
+        <div class="portrait-scanlines"></div>
+      </div>
+      <div class="kalpana-badge">
+        <div class="badge-mission">Mission STS</div>
+        <span class="badge-number">STS-107</span>
+        <div class="badge-mission" style="margin-top:0.4rem;font-size:0.55rem;opacity:0.6;">Photo: NASA</div>
+      </div>
+    </div>
+    <div class="kalpana-content reveal">
+      <p class="section-label">Pioneer — Astronaut — Icon</p>
+      <h2 class="section-title">Kalpana <span>Chawla</span></h2>
+      <div class="section-divider"></div>
+      <p class="kalpana-quote">"The path from dreams to success does exist. May you have the vision to find it, the courage to get onto it, and the perseverance to follow it."</p>
+      <p class="kalpana-body">Born in Karnal, India in 1962, Kalpana Chawla became the first woman of Indian origin to travel to space. A mission specialist and robotic arm operator, she flew aboard the Space Shuttle Columbia and logged over 376 hours in space across two missions. Her work in computational fluid dynamics and her relentless pursuit of aerospace excellence made her a role model for millions around the world.</p>
+      <p class="kalpana-body">On February 1, 2003, Columbia disintegrated during re-entry into Earth's atmosphere. Kalpana Chawla and her six crewmates lost their lives. She remains one of the most celebrated astronauts in history — a symbol of scientific ambition and the courage to reach beyond every horizon.</p>
+
+      <div class="kalpana-timeline">
+        <div class="timeline-row">
+          <span class="t-year">1962</span>
+          <span class="t-event">Born in Karnal, Haryana, India</span>
+        </div>
+        <div class="timeline-row">
+          <span class="t-year">1984</span>
+          <span class="t-event">B.E. in Aeronautical Engineering, Punjab Engineering College</span>
+        </div>
+        <div class="timeline-row">
+          <span class="t-year">1988</span>
+          <span class="t-event">PhD in Aerospace Engineering, University of Colorado</span>
+        </div>
+        <div class="timeline-row">
+          <span class="t-year">1994</span>
+          <span class="t-event">Selected as NASA astronaut candidate</span>
+        </div>
+        <div class="timeline-row">
+          <span class="t-year">1997</span>
+          <span class="t-event">First spaceflight — STS-87, 376 hours in orbit</span>
+        </div>
+        <div class="timeline-row">
+          <span class="t-year">2003</span>
+          <span class="t-event">STS-107 — Columbia mission, final flight</span>
+        </div>
+      </div>
+      <div class="tribute-tag">✦ &nbsp; In Eternal Orbit Among the Stars</div>
+    </div>
+  </div>
+</div>
+
+<!-- ISRO SECTION -->
+<div id="isro" class="agency-section">
+  <div class="agency-bg-isro"></div>
+  <div class="agency-inner">
+    <div class="agency-portrait reveal">
+      <div class="agency-frame isro animated-name-frame">
+        <div class="animated-agency-name isro-name-anim">
+          <div class="anim-name-letters">
+            <span class="anim-letter" style="--i:0">I</span>
+            <span class="anim-letter" style="--i:1">S</span>
+            <span class="anim-letter" style="--i:2">R</span>
+            <span class="anim-letter" style="--i:3">O</span>
+          </div>
+          <div class="anim-name-full">Indian Space Research Organisation</div>
+          <div class="anim-name-est">Est. 1969 · Bengaluru, India</div>
+          <div class="anim-orbit-ring ring-isro-1"></div>
+          <div class="anim-orbit-ring ring-isro-2"></div>
+          <div class="anim-orbit-dot dot-isro"></div>
+        </div>
+      </div>
+      <div class="agency-badge-isro">
+        <div class="badge-role">Headquarters</div>
+        <span class="badge-name-isro">Bengaluru</span>
+        <div class="badge-role" style="margin-top:0.4rem;font-size:0.55rem;opacity:0.6;">India's Premier Space Agency</div>
+      </div>
+    </div>
+    <div class="agency-content isro reveal">
+      <p class="section-label">India's Space Agency · Est. 1969</p>
+      <h2 class="section-title">Indian Space Research<br><span>Organisation</span></h2>
+      <div class="section-divider"></div>
+      <p class="agency-quote">"The purpose of ISRO is to harness space technology for national development, while pursuing space science research and planetary exploration."</p>
+      <p class="agency-body">The Indian Space Research Organisation (ISRO) is India's national space agency, headquartered in Bengaluru. Founded in 1969 under the visionary leadership of Dr. Vikram Sarabhai, ISRO has grown into one of the world's premier space organisations. With a strong focus on cost-effective innovation, ISRO has placed India on the global space map through landmark missions spanning communication, navigation, Earth observation, and deep space exploration.</p>
+      <p class="agency-body">Under the current chairmanship of Dr. V. Narayanan — a cryogenic propulsion expert who joined ISRO in 1984 — the agency is advancing the Gaganyaan human spaceflight programme, preparing Chandrayaan-4, and developing the Next Generation Launch Vehicle (NGLV) to support India's first space station.</p>
+
+      <div class="achievement-list">
+        <div class="achievement-row">
+          <span class="ach-icon">🌕</span>
+          <span class="ach-text">Chandrayaan-3 — First soft landing near lunar south pole (Aug 2023)</span>
+        </div>
+        <div class="achievement-row">
+          <span class="ach-icon">☀️</span>
+          <span class="ach-text">Aditya-L1 — India's first solar observation spacecraft at L1 (Jan 2024)</span>
+        </div>
+        <div class="achievement-row">
+          <span class="ach-icon">🔴</span>
+          <span class="ach-text">Mangalyaan — Mars Orbiter Mission, Asia's first interplanetary success</span>
+        </div>
+        <div class="achievement-row">
+          <span class="ach-icon">🚀</span>
+          <span class="ach-text">SpaDeX — Successful space docking demonstration (Jan 2025)</span>
+        </div>
+        <div class="achievement-row">
+          <span class="ach-icon">👨‍🚀</span>
+          <span class="ach-text">Gaganyaan — India's first crewed spaceflight programme, in development</span>
+        </div>
+      </div>
+
+      <div class="agency-stats" style="margin-top:2.5rem;">
+        <div class="agency-stat-cell">
+          <span class="agency-stat-num-isro">100+</span>
+          <span class="agency-stat-lbl">Satellites Launched</span>
+        </div>
+        <div class="agency-stat-cell">
+          <span class="agency-stat-num-isro">1969</span>
+          <span class="agency-stat-lbl">Founded</span>
+        </div>
+        <div class="agency-stat-cell">
+          <span class="agency-stat-num-isro">17K+</span>
+          <span class="agency-stat-lbl">Scientists & Engineers</span>
+        </div>
+      </div>
+
+      <div class="agency-tag-isro">🛰️ &nbsp; Reaching for the Stars — Made in India</div>
+    </div>
+  </div>
+</div>
+
+<!-- NASA SECTION -->
+<div id="nasa" class="agency-section">
+  <div class="agency-bg-nasa"></div>
+  <div class="agency-inner reverse">
+    <div class="agency-portrait reveal">
+      <div class="agency-frame nasa animated-name-frame">
+        <div class="animated-agency-name nasa-name-anim">
+          <div class="anim-name-letters">
+            <span class="anim-letter nasa-letter" style="--i:0">N</span>
+            <span class="anim-letter nasa-letter" style="--i:1">A</span>
+            <span class="anim-letter nasa-letter" style="--i:2">S</span>
+            <span class="anim-letter nasa-letter" style="--i:3">A</span>
+          </div>
+          <div class="anim-name-full" style="color:#0096ff;">National Aeronautics & Space Administration</div>
+          <div class="anim-name-est" style="color:rgba(0,150,255,0.6);">Est. 1958 · Washington D.C., USA</div>
+          <div class="anim-orbit-ring ring-nasa-1"></div>
+          <div class="anim-orbit-ring ring-nasa-2"></div>
+          <div class="anim-orbit-dot dot-nasa"></div>
+        </div>
+      </div>
+      <div class="agency-badge-nasa">
+        <div class="badge-role">Headquarters</div>
+        <span class="badge-name-nasa">Washington D.C.</span>
+        <div class="badge-role" style="margin-top:0.4rem;font-size:0.55rem;opacity:0.6;">America's Space Agency</div>
+      </div>
+    </div>
+    <div class="agency-content nasa reveal">
+      <p class="section-label">America's Space Agency · Est. 1958</p>
+      <h2 class="section-title">National Aeronautics &<br><span>Space Administration</span></h2>
+      <div class="section-divider"></div>
+      <p class="agency-quote">"NASA's mission is to push the boundaries of human exploration, ignite the orbital economy, drive scientific discovery, and innovate for the benefit of all humanity."<br><em style="font-size:0.85rem;opacity:0.7;">— Jared Isaacman, 15th Administrator</em></p>
+      <p class="agency-body">NASA, established in 1958, is the United States government agency responsible for the nation's civilian space program and aeronautics and aerospace research. From the Apollo Moon landings to the Hubble Space Telescope, Mars rovers, and the James Webb Space Telescope, NASA has defined humanity's most ambitious scientific endeavours for over six decades.</p>
+      <p class="agency-body">Jared Isaacman, confirmed as NASA's 15th administrator in December 2025, brings a unique entrepreneurial and astronaut perspective. A billionaire pilot who commanded the first all-civilian orbital spaceflight (Inspiration4) and performed the first private spacewalk (Polaris Dawn), Isaacman is steering NASA toward Artemis lunar landings and long-term crewed Mars exploration.</p>
+
+      <div class="achievement-list">
+        <div class="achievement-row">
+          <span class="ach-icon">🌙</span>
+          <span class="ach-text">Artemis Programme — Returning humans to the Moon before 2026</span>
+        </div>
+        <div class="achievement-row">
+          <span class="ach-icon">🔭</span>
+          <span class="ach-text">James Webb Space Telescope — Deepest views of the early universe</span>
+        </div>
+        <div class="achievement-row">
+          <span class="ach-icon">🪐</span>
+          <span class="ach-text">Europa Clipper — Searching for habitability in Jupiter's icy moon</span>
+        </div>
+        <div class="achievement-row">
+          <span class="ach-icon">🤖</span>
+          <span class="ach-text">Perseverance Rover — Active Mars surface science since Feb 2021</span>
+        </div>
+        <div class="achievement-row">
+          <span class="ach-icon">🌌</span>
+          <span class="ach-text">ISS — Continuous human presence in low Earth orbit since Nov 2000</span>
+        </div>
+      </div>
+
+      <div class="agency-stats" style="margin-top:2.5rem;">
+        <div class="agency-stat-cell">
+          <span class="agency-stat-num-nasa">1958</span>
+          <span class="agency-stat-lbl">Founded</span>
+        </div>
+        <div class="agency-stat-cell">
+          <span class="agency-stat-num-nasa">18K+</span>
+          <span class="agency-stat-lbl">Employees</span>
+        </div>
+        <div class="agency-stat-cell">
+          <span class="agency-stat-num-nasa">$24B</span>
+          <span class="agency-stat-lbl">Annual Budget</span>
+        </div>
+      </div>
+
+      <div class="agency-tag-nasa">🚀 &nbsp; For the Benefit of All — Per Aspera Ad Astra</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROL ROOM -->
+<section id="control">
+  <p class="section-label reveal">Live Feed</p>
+  <h2 class="section-title reveal">Mission <span>Control Room</span></h2>
+  <div class="section-divider reveal"></div>
+  <div class="control-grid">
+    <div class="control-panel reveal">
+      <div class="panel-header">
+        <span class="panel-title">System Telemetry</span>
+        <span class="panel-live"><span class="status-dot"></span>Live</span>
+      </div>
+      <div class="telemetry-bars">
+        <div class="tel-row">
+          <span class="tel-label">Comms Link</span>
+          <div class="tel-track"><div class="tel-fill" style="width:94%;animation-delay:0.2s"></div></div>
+          <span class="tel-value">94%</span>
+        </div>
+        <div class="tel-row">
+          <span class="tel-label">Power Array</span>
+          <div class="tel-track"><div class="tel-fill green" style="width:88%;animation-delay:0.4s"></div></div>
+          <span class="tel-value" style="color:var(--green)">88%</span>
+        </div>
+        <div class="tel-row">
+          <span class="tel-label">Fuel Reserve</span>
+          <div class="tel-track"><div class="tel-fill amber" style="width:61%;animation-delay:0.6s"></div></div>
+          <span class="tel-value" style="color:var(--amber)">61%</span>
+        </div>
+        <div class="tel-row">
+          <span class="tel-label">Thermal Shield</span>
+          <div class="tel-track"><div class="tel-fill" style="width:99%;animation-delay:0.8s"></div></div>
+          <span class="tel-value">99%</span>
+        </div>
+        <div class="tel-row">
+          <span class="tel-label">Crew O₂</span>
+          <div class="tel-track"><div class="tel-fill green" style="width:97%;animation-delay:1s"></div></div>
+          <span class="tel-value" style="color:var(--green)">97%</span>
+        </div>
+        <div class="tel-row">
+          <span class="tel-label">Data Uplink</span>
+          <div class="tel-track"><div class="tel-fill crimson" style="width:43%;animation-delay:1.2s"></div></div>
+          <span class="tel-value" style="color:var(--crimson)">43%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-panel reveal">
+      <div class="panel-header">
+        <span class="panel-title">Mission Log</span>
+        <span class="panel-live"><span class="status-dot"></span>Live</span>
+      </div>
+      <div class="mission-log" id="missionLog">
+        <div class="log-entry"><span class="log-time">T+00:00:12</span><span class="log-msg ok">All systems nominal. Orbital insertion confirmed.</span></div>
+        <div class="log-entry"><span class="log-time">T+00:04:38</span><span class="log-msg">Payload bay doors opened. Deploy sequence initiated.</span></div>
+        <div class="log-entry"><span class="log-time">T+00:11:02</span><span class="log-msg warn">Solar panel 3B voltage fluctuation detected. Monitoring.</span></div>
+        <div class="log-entry"><span class="log-time">T+00:15:47</span><span class="log-msg ok">EVA suit pressure checks passed. Crew ready.</span></div>
+        <div class="log-entry"><span class="log-time">T+00:22:09</span><span class="log-msg">Robotic arm deployed. Satellite capture approach underway.</span></div>
+        <div class="log-entry"><span class="log-time">T+00:31:55</span><span class="log-msg alert">Debris alert — minor trajectory correction executed.</span></div>
+        <div class="log-entry"><span class="log-time">T+00:40:13</span><span class="log-msg ok">Satellite secured. Crew returning to airlock.</span></div>
+      </div>
+    </div>
+
+    <div class="control-panel wide reveal" style="padding:2.5rem;">
+      <div class="panel-header">
+        <span class="panel-title">Deep Space Communications Array — Real-time Signal Map</span>
+        <span class="panel-live"><span class="status-dot"></span>Tracking</span>
+      </div>
+      <canvas id="radarCanvas" style="width:100%;height:220px;display:block;"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- SOLAR SYSTEM -->
+<section id="solar" style="max-width:none;padding:6rem 3rem;">
+  <p class="section-label reveal">Interactive Orrery</p>
+  <h2 class="section-title reveal" style="text-align:center;">Our <span>Solar System</span></h2>
+  <div class="section-divider reveal" style="margin:0 auto 3rem;"></div>
+  <div class="solar-system-wrap">
+    <canvas class="solar-canvas" id="solarCanvas"></canvas>
+  </div>
+</section>
+
+<!-- PLANETS OF THE SOLAR SYSTEM -->
+<div id="planets">
+  <div class="planets-bg"></div>
+  <div class="planets-inner">
+    <p class="section-label reveal">Solar System Explorer</p>
+    <h2 class="section-title reveal" style="text-align:center;">Planets of Our <span>Solar System</span></h2>
+    <div class="section-divider reveal" style="margin:0 auto 0;"></div>
+
+    <div class="planets-grid">
+
+      <!-- MERCURY -->
+      <div class="planet-card reveal" style="--planet-color:#a8a8a8;--float-delay:0s;">
+        <div class="planet-order-badge">#01</div>
+        <div class="planet-ball-wrap">
+          <div class="planet-ball" style="width:38px;height:38px;background:radial-gradient(circle at 35% 35%, #d4d4d4, #787878);--planet-color:#a8a8a8;--float-delay:0s;"></div>
+        </div>
+        <div class="planet-name">Mercury</div>
+        <div class="planet-type">Terrestrial · Innermost</div>
+        <div class="planet-data">
+          <div class="pd-row">
+            <span class="pd-label">Avg Dist from Earth</span>
+            <span class="pd-value highlight">77–222 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Min Distance</span>
+            <span class="pd-value">77.3 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Max Distance</span>
+            <span class="pd-value">221.9 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Light Travel Time</span>
+            <span class="pd-value">4.3 – 12.3 min</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Diameter</span>
+            <span class="pd-value">4,879 km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Orbital Period</span>
+            <span class="pd-value">88 Earth days</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Surface Temp</span>
+            <span class="pd-value">−180 to 430°C</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Moons</span>
+            <span class="pd-value">0</span>
+          </div>
+        </div>
+        <p class="planet-desc">Smallest planet in the solar system. Nearly airless and cratered, with the most extreme temperature swings. A year lasts only 88 days.</p>
+      </div>
+
+      <!-- VENUS -->
+      <div class="planet-card reveal" style="--planet-color:#e8c06a;--float-delay:0.3s;">
+        <div class="planet-order-badge">#02</div>
+        <div class="planet-ball-wrap">
+          <div class="planet-ball" style="width:54px;height:54px;background:radial-gradient(circle at 35% 30%, #f5dc88, #c89040);--planet-color:#e8c06a;--float-delay:0.3s;"></div>
+        </div>
+        <div class="planet-name">Venus</div>
+        <div class="planet-type">Terrestrial · Hottest</div>
+        <div class="planet-data">
+          <div class="pd-row">
+            <span class="pd-label">Avg Dist from Earth</span>
+            <span class="pd-value highlight">38–261 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Min Distance</span>
+            <span class="pd-value">38.2 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Max Distance</span>
+            <span class="pd-value">261.0 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Light Travel Time</span>
+            <span class="pd-value">2.1 – 14.5 min</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Diameter</span>
+            <span class="pd-value">12,104 km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Orbital Period</span>
+            <span class="pd-value">225 Earth days</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Surface Temp</span>
+            <span class="pd-value">~465°C (avg)</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Moons</span>
+            <span class="pd-value">0</span>
+          </div>
+        </div>
+        <p class="planet-desc">The hottest planet despite not being closest to the Sun. Dense CO₂ atmosphere causes a runaway greenhouse effect. Rotates backwards compared to most planets.</p>
+      </div>
+
+      <!-- EARTH -->
+      <div class="planet-card reveal" style="--planet-color:#4a90d9;--float-delay:0.6s;">
+        <div class="planet-order-badge">#03</div>
+        <div class="planet-ball-wrap">
+          <div class="planet-ball" style="width:56px;height:56px;background:radial-gradient(circle at 35% 30%, #6abfff, #1a5fa8);--planet-color:#4a90d9;--float-delay:0.6s;"></div>
+        </div>
+        <div class="planet-name">Earth</div>
+        <div class="planet-type">Terrestrial · Home World</div>
+        <div class="planet-data">
+          <div class="pd-row">
+            <span class="pd-label">Distance from Sun</span>
+            <span class="pd-value highlight">149.6 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Distance from Earth</span>
+            <span class="pd-value">0 km (origin)</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Diameter</span>
+            <span class="pd-value">12,742 km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Orbital Period</span>
+            <span class="pd-value">365.25 days</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Surface Temp</span>
+            <span class="pd-value">−89 to 57°C</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Gravity</span>
+            <span class="pd-value">9.81 m/s²</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Atmosphere</span>
+            <span class="pd-value">N₂ 78%, O₂ 21%</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Moons</span>
+            <span class="pd-value">1 (The Moon)</span>
+          </div>
+        </div>
+        <p class="planet-desc">The only known planet to harbour life. 71% covered in liquid water. Protected by a magnetic field and an ozone layer. Humanity's only confirmed home.</p>
+      </div>
+
+      <!-- MARS -->
+      <div class="planet-card reveal" style="--planet-color:#d95030;--float-delay:0.9s;">
+        <div class="planet-order-badge">#04</div>
+        <div class="planet-ball-wrap">
+          <div class="planet-ball" style="width:44px;height:44px;background:radial-gradient(circle at 35% 30%, #f07050, #aa2010);--planet-color:#d95030;--float-delay:0.9s;"></div>
+        </div>
+        <div class="planet-name">Mars</div>
+        <div class="planet-type">Terrestrial · Red Planet</div>
+        <div class="planet-data">
+          <div class="pd-row">
+            <span class="pd-label">Avg Dist from Earth</span>
+            <span class="pd-value highlight">54.6–401 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Min Distance</span>
+            <span class="pd-value">54.6 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Max Distance</span>
+            <span class="pd-value">401.4 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Light Travel Time</span>
+            <span class="pd-value">3 – 22.4 min</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Diameter</span>
+            <span class="pd-value">6,779 km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Orbital Period</span>
+            <span class="pd-value">687 Earth days</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Surface Temp</span>
+            <span class="pd-value">−125 to 20°C</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Moons</span>
+            <span class="pd-value">2 (Phobos, Deimos)</span>
+          </div>
+        </div>
+        <p class="planet-desc">Humanity's next target for crewed missions. Home to Olympus Mons (tallest volcano in the solar system) and Valles Marineris canyon system. Active rovers currently exploring.</p>
+      </div>
+
+      <!-- JUPITER -->
+      <div class="planet-card reveal" style="--planet-color:#c89060;--float-delay:1.2s;">
+        <div class="planet-order-badge">#05</div>
+        <div class="planet-ball-wrap">
+          <div class="planet-ball" style="width:70px;height:70px;background:radial-gradient(circle at 35% 30%, #e8b878, #a06030);--planet-color:#c89060;--float-delay:1.2s;"></div>
+        </div>
+        <div class="planet-name">Jupiter</div>
+        <div class="planet-type">Gas Giant · Largest</div>
+        <div class="planet-data">
+          <div class="pd-row">
+            <span class="pd-label">Avg Dist from Earth</span>
+            <span class="pd-value highlight">588–968 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Min Distance</span>
+            <span class="pd-value">588.5 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Max Distance</span>
+            <span class="pd-value">968.1 M km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Light Travel Time</span>
+            <span class="pd-value">32.7 – 53.8 min</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Diameter</span>
+            <span class="pd-value">139,820 km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Orbital Period</span>
+            <span class="pd-value">11.86 Earth years</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Cloud Temp</span>
+            <span class="pd-value">~−145°C</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Moons</span>
+            <span class="pd-value">95 known</span>
+          </div>
+        </div>
+        <p class="planet-desc">The largest planet — more than twice as massive as all others combined. Great Red Spot is a storm larger than Earth, raging for over 350 years. Its moon Europa may harbour a subsurface ocean.</p>
+      </div>
+
+      <!-- SATURN -->
+      <div class="planet-card reveal" style="--planet-color:#ddb86a;--float-delay:1.5s;">
+        <div class="planet-order-badge">#06</div>
+        <div class="planet-ball-wrap">
+          <div class="planet-ring-wrap">
+            <div class="planet-ball" style="width:60px;height:60px;background:radial-gradient(circle at 35% 30%, #f5d888, #b08030);--planet-color:#ddb86a;--float-delay:1.5s;"></div>
+            <div class="planet-ring"></div>
+          </div>
+        </div>
+        <div class="planet-name">Saturn</div>
+        <div class="planet-type">Gas Giant · Ringed</div>
+        <div class="planet-data">
+          <div class="pd-row">
+            <span class="pd-label">Avg Dist from Earth</span>
+            <span class="pd-value highlight">1.2–1.67 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Min Distance</span>
+            <span class="pd-value">1.195 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Max Distance</span>
+            <span class="pd-value">1.659 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Light Travel Time</span>
+            <span class="pd-value">66.4 – 92.2 min</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Diameter</span>
+            <span class="pd-value">116,460 km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Orbital Period</span>
+            <span class="pd-value">29.46 Earth years</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Ring Span</span>
+            <span class="pd-value">~282,000 km wide</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Moons</span>
+            <span class="pd-value">146 known</span>
+          </div>
+        </div>
+        <p class="planet-desc">Most recognisable planet with its spectacular ring system made of ice and rock. Least dense planet — it would float in water. Moon Titan has liquid methane lakes.</p>
+      </div>
+
+      <!-- URANUS -->
+      <div class="planet-card reveal" style="--planet-color:#70d8e8;--float-delay:1.8s;">
+        <div class="planet-order-badge">#07</div>
+        <div class="planet-ball-wrap">
+          <div class="planet-ball" style="width:52px;height:52px;background:radial-gradient(circle at 35% 30%, #a0f0ff, #3098b0);--planet-color:#70d8e8;--float-delay:1.8s;"></div>
+        </div>
+        <div class="planet-name">Uranus</div>
+        <div class="planet-type">Ice Giant · Tilted</div>
+        <div class="planet-data">
+          <div class="pd-row">
+            <span class="pd-label">Avg Dist from Earth</span>
+            <span class="pd-value highlight">2.57–3.15 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Min Distance</span>
+            <span class="pd-value">2.57 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Max Distance</span>
+            <span class="pd-value">3.15 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Light Travel Time</span>
+            <span class="pd-value">2.38 – 2.92 hrs</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Diameter</span>
+            <span class="pd-value">50,724 km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Orbital Period</span>
+            <span class="pd-value">84.02 Earth years</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Axial Tilt</span>
+            <span class="pd-value">97.77° (on side!)</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Moons</span>
+            <span class="pd-value">28 known</span>
+          </div>
+        </div>
+        <p class="planet-desc">Rotates on its side — its axis is tilted nearly 98°, likely from an ancient collision. Coldest planetary atmosphere in the solar system at −224°C. Has faint rings.</p>
+      </div>
+
+      <!-- NEPTUNE -->
+      <div class="planet-card reveal" style="--planet-color:#3050d0;--float-delay:2.1s;">
+        <div class="planet-order-badge">#08</div>
+        <div class="planet-ball-wrap">
+          <div class="planet-ball" style="width:50px;height:50px;background:radial-gradient(circle at 35% 30%, #5070f8, #1830a0);--planet-color:#3050d0;--float-delay:2.1s;"></div>
+        </div>
+        <div class="planet-name">Neptune</div>
+        <div class="planet-type">Ice Giant · Outermost</div>
+        <div class="planet-data">
+          <div class="pd-row">
+            <span class="pd-label">Avg Dist from Earth</span>
+            <span class="pd-value highlight">4.3–4.7 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Min Distance</span>
+            <span class="pd-value">4.3 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Max Distance</span>
+            <span class="pd-value">4.7 B km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Light Travel Time</span>
+            <span class="pd-value">3.98 – 4.35 hrs</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Diameter</span>
+            <span class="pd-value">49,244 km</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Orbital Period</span>
+            <span class="pd-value">164.8 Earth years</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Wind Speed</span>
+            <span class="pd-value">up to 2,100 km/h</span>
+          </div>
+          <div class="pd-row">
+            <span class="pd-label">Moons</span>
+            <span class="pd-value">16 known</span>
+          </div>
+        </div>
+        <p class="planet-desc">Farthest planet from the Sun. Strongest recorded winds in the solar system. Has never completed a full orbit since its discovery in 1846 — one Neptunian year takes 165 Earth years.</p>
+      </div>
+
+    </div><!-- /.planets-grid -->
+  </div><!-- /.planets-inner -->
+</div>
+
+<!-- SUN · MOON · ASTEROIDS · METEORS -->
+<div id="cosmic">
+
+  <!-- ── SUN ── -->
+  <div class="sun-block">
+    <div class="sun-inner">
+      <div class="sun-canvas-wrap reveal">
+        <canvas id="sunCanvas"></canvas>
+      </div>
+      <div class="sun-content reveal">
+        <p class="section-label">Our Star · G-Type Main-Sequence</p>
+        <h2 class="section-title">The <span>Sun</span></h2>
+        <div class="section-divider"></div>
+        <p class="sun-desc">The Sun is the gravitational anchor of our solar system — a massive ball of hot plasma held together by its own gravity. It accounts for 99.86% of the total mass of the solar system and has been fusing hydrogen into helium for roughly 4.6 billion years.</p>
+        <p class="sun-desc">Every second, the Sun converts 600 million tonnes of hydrogen into helium via nuclear fusion, releasing energy that takes up to 100,000 years to travel from the core to the surface — and only 8 minutes to reach Earth.</p>
+        <div class="sun-fact-grid">
+          <div class="sun-fact-cell"><span class="sfc-label">Distance from Earth</span><span class="sfc-value">149.6 M km</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Light Travel Time</span><span class="sfc-value">8 min 20 sec</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Diameter</span><span class="sfc-value">1,391,000 km</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Mass</span><span class="sfc-value">1.989 × 10³⁰ kg</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Core Temperature</span><span class="sfc-value">15,000,000°C</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Surface Temperature</span><span class="sfc-value">5,500°C</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Age</span><span class="sfc-value">~4.6 Billion yrs</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Solar Rotation</span><span class="sfc-value">~25 days (equator)</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Composition</span><span class="sfc-value">H₂ 74%, He 24%</span></div>
+          <div class="sun-fact-cell"><span class="sfc-label">Remaining Lifespan</span><span class="sfc-value">~5 Billion years</span></div>
+        </div>
+        <div class="sun-layers">
+          <div class="sun-layer-row"><span class="slr-name">Core</span><span class="slr-desc">Nuclear fusion zone — 15 million °C, generates all solar energy</span></div>
+          <div class="sun-layer-row"><span class="slr-name">Radiative</span><span class="slr-desc">Energy transported outward by radiation over thousands of years</span></div>
+          <div class="sun-layer-row"><span class="slr-name">Convective</span><span class="slr-desc">Hot plasma rises, cools, sinks in convection cells</span></div>
+          <div class="sun-layer-row"><span class="slr-name">Photosphere</span><span class="slr-desc">Visible surface ~5,500°C, sunspots form here</span></div>
+          <div class="sun-layer-row"><span class="slr-name">Chromosphere</span><span class="slr-desc">Pinkish layer visible during eclipses, ~20,000°C</span></div>
+          <div class="sun-layer-row"><span class="slr-name">Corona</span><span class="slr-desc">Outer atmosphere ~1–3 million°C — source of solar wind</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cosmic-divider"></div>
+
+  <!-- ── MOON ── -->
+  <div class="moon-block">
+    <div class="moon-inner">
+      <div class="moon-content reveal">
+        <p class="section-label">Earth's Natural Satellite · Luna</p>
+        <h2 class="section-title">The <span>Moon</span></h2>
+        <div class="section-divider"></div>
+        <p class="sun-desc" style="color:rgba(200,224,255,0.6)">The Moon is Earth's only natural satellite and the fifth largest moon in the solar system. It stabilises Earth's axial tilt, drives ocean tides, and was the first celestial body beyond Earth visited by humans — a feat achieved on July 20, 1969 during Apollo 11.</p>
+        <p class="sun-desc" style="color:rgba(200,224,255,0.6)">The Moon is slowly drifting away from Earth at 3.8 cm per year. It is tidally locked — the same face always points toward Earth. Its surface is covered in regolith (fine dust and rock) shaped by billions of years of asteroid impacts.</p>
+        <div class="moon-phase-row">
+          <div class="moon-phase-cell"><span class="mpc-icon">🌑</span><span class="mpc-name">New Moon</span></div>
+          <div class="moon-phase-cell"><span class="mpc-icon">🌒</span><span class="mpc-name">Waxing Crescent</span></div>
+          <div class="moon-phase-cell"><span class="mpc-icon">🌓</span><span class="mpc-name">First Quarter</span></div>
+          <div class="moon-phase-cell"><span class="mpc-icon">🌔</span><span class="mpc-name">Waxing Gibbous</span></div>
+          <div class="moon-phase-cell"><span class="mpc-icon">🌕</span><span class="mpc-name">Full Moon</span></div>
+          <div class="moon-phase-cell"><span class="mpc-icon">🌖</span><span class="mpc-name">Waning Gibbous</span></div>
+          <div class="moon-phase-cell"><span class="mpc-icon">🌗</span><span class="mpc-name">Last Quarter</span></div>
+          <div class="moon-phase-cell"><span class="mpc-icon">🌘</span><span class="mpc-name">Waning Crescent</span></div>
+        </div>
+        <div class="moon-fact-grid">
+          <div class="moon-fact-cell"><span class="mfc-label">Avg Distance from Earth</span><span class="mfc-value">384,400 km</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Light Travel Time</span><span class="mfc-value">1.28 seconds</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Diameter</span><span class="mfc-value">3,474 km</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Orbital Period</span><span class="mfc-value">27.3 Earth days</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Surface Gravity</span><span class="mfc-value">1.62 m/s² (1/6 Earth)</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Surface Temp</span><span class="mfc-value">−173 to 127°C</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Apollo Landings</span><span class="mfc-value">6 missions (1969–72)</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Age</span><span class="mfc-value">~4.5 Billion yrs</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Lunar Maria</span><span class="mfc-value">Dark basaltic plains</span></div>
+          <div class="moon-fact-cell"><span class="mfc-label">Tidal Lock</span><span class="mfc-value">Same face always visible</span></div>
+        </div>
+      </div>
+      <div class="moon-canvas-wrap reveal">
+        <canvas id="moonCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="cosmic-divider"></div>
+
+  <!-- ── ASTEROIDS & METEORS ── -->
+  <div class="rocks-block">
+    <div class="rocks-inner">
+      <p class="section-label reveal" style="color:var(--crimson);">Near-Earth Objects · Impact Hazard Monitoring</p>
+      <h2 class="section-title reveal">Asteroids, Meteors <span>&amp; Comets</span></h2>
+      <div class="section-divider reveal" style="background:linear-gradient(90deg,var(--crimson),transparent);"></div>
+
+      <p class="rocks-desc reveal">The solar system is teeming with rocky and icy debris — remnants from its formation 4.6 billion years ago. Asteroids are rocky bodies mostly orbiting in the Main Belt between Mars and Jupiter. When they enter Earth's atmosphere they become meteors (shooting stars), and if they survive to the surface they are meteorites.</p>
+
+      <!-- Live meteor canvas -->
+      <canvas id="meteorCanvas" class="reveal"></canvas>
+
+      <div class="rocks-two-col">
+
+        <!-- ASTEROIDS PANEL -->
+        <div class="rocks-panel reveal">
+          <div class="rocks-panel-title">☄️ Notable Asteroids</div>
+          <div class="rocks-panel-sub">Mass · Size · Threat Classification</div>
+          <div class="asteroid-list">
+            <div class="asteroid-row">
+              <span class="ar-num">01</span>
+              <span class="ar-name">Ceres<small>Dwarf Planet · Main Belt</small></span>
+              <span class="ar-size">939 km</span>
+            </div>
+            <div class="asteroid-row">
+              <span class="ar-num">02</span>
+              <span class="ar-name">Vesta<small>Main Belt · 2nd Largest</small></span>
+              <span class="ar-size">525 km</span>
+            </div>
+            <div class="asteroid-row">
+              <span class="ar-num">03</span>
+              <span class="ar-name">Pallas<small>Main Belt · 3rd Largest</small></span>
+              <span class="ar-size">511 km</span>
+            </div>
+            <div class="asteroid-row">
+              <span class="ar-num">04</span>
+              <span class="ar-name">Apophis<small>Near-Earth · Potential 2029 flyby</small></span>
+              <span class="ar-size">340 m</span>
+            </div>
+            <div class="asteroid-row">
+              <span class="ar-num">05</span>
+              <span class="ar-name">Bennu<small>Near-Earth · OSIRIS-REx sample return</small></span>
+              <span class="ar-size">490 m</span>
+            </div>
+            <div class="asteroid-row">
+              <span class="ar-num">06</span>
+              <span class="ar-name">Ryugu<small>C-type · Hayabusa2 sample return</small></span>
+              <span class="ar-size">900 m</span>
+            </div>
+            <div class="asteroid-row">
+              <span class="ar-num">07</span>
+              <span class="ar-name">Itokawa<small>S-type · First sample return target</small></span>
+              <span class="ar-size">535 m</span>
+            </div>
+            <div class="asteroid-row">
+              <span class="ar-num">08</span>
+              <span class="ar-name">Didymos / Dimorphos<small>DART impact target — deflection test 2022</small></span>
+              <span class="ar-size">780 m / 160 m</span>
+            </div>
+          </div>
+          <div class="near-earth-tag">⚠ &nbsp; 2,350+ Potentially Hazardous Asteroids tracked by NASA</div>
+        </div>
+
+        <!-- METEORS PANEL -->
+        <div class="rocks-panel reveal">
+          <div class="rocks-panel-title">🌠 Meteor Showers &amp; Famous Strikes</div>
+          <div class="rocks-panel-sub">Annual Events · Historic Impacts</div>
+          <div class="meteor-list">
+            <div class="meteor-row">
+              <span class="mr-icon">🌟</span>
+              <span class="mr-name">Perseids<small>Most prolific annual shower · Source: Comet Swift-Tuttle</small></span>
+              <span class="mr-peak">Aug 11–13</span>
+            </div>
+            <div class="meteor-row">
+              <span class="mr-icon">🌟</span>
+              <span class="mr-name">Geminids<small>Best annual shower · Source: Asteroid 3200 Phaethon</small></span>
+              <span class="mr-peak">Dec 13–14</span>
+            </div>
+            <div class="meteor-row">
+              <span class="mr-icon">🌟</span>
+              <span class="mr-name">Leonids<small>Intense bursts · Source: Comet 55P/Tempel-Tuttle</small></span>
+              <span class="mr-peak">Nov 17–18</span>
+            </div>
+            <div class="meteor-row">
+              <span class="mr-icon">🌟</span>
+              <span class="mr-name">Orionids<small>Halley's Comet debris trail</small></span>
+              <span class="mr-peak">Oct 21</span>
+            </div>
+            <div class="meteor-row">
+              <span class="mr-icon">🌟</span>
+              <span class="mr-name">Lyrids<small>One of the oldest known · Source: Comet Thatcher</small></span>
+              <span class="mr-peak">Apr 22–23</span>
+            </div>
+            <div class="meteor-row">
+              <span class="mr-icon">💥</span>
+              <span class="mr-name">Tunguska Event (1908)<small>30–50m object, 2,000 km² flattened, Russia</small></span>
+              <span class="mr-peak" style="color:var(--crimson)">IMPACT</span>
+            </div>
+            <div class="meteor-row">
+              <span class="mr-icon">💥</span>
+              <span class="mr-name">Chicxulub Impactor (66 Ma)<small>~10 km asteroid — caused mass extinction of dinosaurs</small></span>
+              <span class="mr-peak" style="color:var(--crimson)">EXTINCTION</span>
+            </div>
+            <div class="meteor-row">
+              <span class="mr-icon">💥</span>
+              <span class="mr-name">Chelyabinsk Meteor (2013)<small>20m object, shockwave injured 1,500 people, Russia</small></span>
+              <span class="mr-peak" style="color:var(--amber)">AIRBURST</span>
+            </div>
+          </div>
+          <div class="near-earth-tag" style="border-color:rgba(0,245,255,0.3);color:var(--cyan);">✦ &nbsp; Earth intersects ~40,000 tonnes of space debris per year</div>
+        </div>
+
+      </div><!-- /.rocks-two-col -->
+    </div><!-- /.rocks-inner -->
+  </div>
+
+</div><!-- /#cosmic -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">⬡ SPACE CONTROL</div>
+  <p class="footer-copy">© 2026 Space Control Command. All mission data is operational.</p>
+  <ul class="footer-links">
+    <li><a href="#">Mission Brief</a></li>
+    <li><a href="#">Crew Roster</a></li>
+    <li><a href="#">Contact Ground</a></li>
+  </ul>
+</footer>
+
+<script>
+// ── STARFIELD ──
+(function(){
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  function initStars(){
+    stars = [];
+    for(let i=0;i<350;i++){
+      stars.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*1.5+0.2,
+        a: Math.random(),
+        speed: Math.random()*0.3+0.05,
+        drift: (Math.random()-0.5)*0.1
+      });
+    }
+  }
+  function drawStars(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    stars.forEach(s=>{
+      s.a += s.speed * 0.01;
+      s.x += s.drift;
+      if(s.x<0) s.x=canvas.width;
+      if(s.x>canvas.width) s.x=0;
+      const alpha = 0.3 + 0.7*Math.abs(Math.sin(s.a));
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,224,255,${alpha})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+  window.addEventListener('resize',()=>{ resize(); initStars(); });
+  resize(); initStars(); drawStars();
+})();
+
+// ── COUNTER ANIMATION ──
+function animateCounter(el){
+  const target = parseInt(el.dataset.target);
+  const duration = 2200;
+  const start = performance.now();
+  function step(now){
+    const p = Math.min((now-start)/duration,1);
+    const ease = 1-Math.pow(1-p,4);
+    el.textContent = Math.floor(ease*target).toLocaleString();
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ── SCROLL REVEAL ──
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      const counter = e.target.querySelector('[data-target]') || (e.target.dataset.target ? e.target : null);
+      if(e.target.dataset.target) animateCounter(e.target);
+      if(e.target.querySelectorAll) e.target.querySelectorAll('[data-target]').forEach(animateCounter);
+      observer.unobserve(e.target);
+    }
+  });
+},{threshold:0.15});
+
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+// ── BAR ANIMATIONS triggered on reveal ──
+const barObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.querySelectorAll('.tel-fill').forEach(b=>{
+        b.style.transform='scaleX(1)';
+      });
+    }
+  });
+},{threshold:0.3});
+document.querySelectorAll('.control-panel').forEach(p=>barObserver.observe(p));
+
+// ── KALPANA PORTRAIT (real photo — canvas block removed) ──
+(function(){
+  const canvas = document.getElementById('kalpanaCanvas');
+  if(!canvas) return; // canvas no longer present; photo used instead
+  const ctx = canvas.getContext('2d');
+  canvas.width = 420;
+  canvas.height = 560;
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Background deep space
+    const bgGrad = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+    bgGrad.addColorStop(0,'#06040e');
+    bgGrad.addColorStop(0.6,'#0e0820');
+    bgGrad.addColorStop(1,'#020410');
+    ctx.fillStyle=bgGrad; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // Subtle stars
+    for(let i=0;i<80;i++){
+      const sx=Math.random()*canvas.width, sy=Math.random()*canvas.height;
+      ctx.beginPath(); ctx.arc(sx,sy,Math.random()*1.2,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,224,255,${Math.random()*0.5+0.1})`; ctx.fill();
+    }
+
+    // Glow aura behind figure
+    const aura = ctx.createRadialGradient(210,240,30,210,240,220);
+    aura.addColorStop(0,'rgba(180,120,255,0.25)');
+    aura.addColorStop(1,'transparent');
+    ctx.fillStyle=aura; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // Helmet outline (simplified spacesuit)
+    // Body/suit
+    ctx.beginPath();
+    ctx.ellipse(210,460,130,140,0,0,Math.PI*2);
+    ctx.fillStyle='#1a1035'; ctx.fill();
+    ctx.strokeStyle='rgba(180,120,255,0.4)'; ctx.lineWidth=2; ctx.stroke();
+
+    // Chest detail
+    ctx.beginPath();
+    ctx.ellipse(210,440,90,80,0,0,Math.PI*2);
+    ctx.fillStyle='#150d28'; ctx.fill();
+    ctx.strokeStyle='rgba(0,245,255,0.3)'; ctx.lineWidth=1; ctx.stroke();
+
+    // NASA patch
+    const patchGrad = ctx.createRadialGradient(210,430,0,210,430,35);
+    patchGrad.addColorStop(0,'rgba(0,100,200,0.6)');
+    patchGrad.addColorStop(1,'rgba(0,50,120,0.3)');
+    ctx.beginPath(); ctx.arc(210,430,30,0,Math.PI*2);
+    ctx.fillStyle=patchGrad; ctx.fill();
+    ctx.strokeStyle='rgba(0,245,255,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.font='bold 9px Orbitron,monospace';
+    ctx.textAlign='center'; ctx.fillText('NASA',210,434);
+
+    // Neck
+    ctx.beginPath();
+    ctx.rect(185,300,50,60);
+    ctx.fillStyle='#c8a87a'; ctx.fill();
+
+    // Head
+    const headGrad = ctx.createRadialGradient(210,230,10,210,240,80);
+    headGrad.addColorStop(0,'#d4a87a');
+    headGrad.addColorStop(0.7,'#c08060');
+    headGrad.addColorStop(1,'#8a5040');
+    ctx.beginPath(); ctx.ellipse(210,240,70,85,0,0,Math.PI*2);
+    ctx.fillStyle=headGrad; ctx.fill();
+
+    // Hair
+    ctx.beginPath();
+    ctx.ellipse(210,175,72,45,0,Math.PI,Math.PI*2);
+    ctx.quadraticCurveTo(285,200,280,240);
+    ctx.quadraticCurveTo(285,180,210,155);
+    ctx.quadraticCurveTo(135,180,140,240);
+    ctx.quadraticCurveTo(138,200,148,175);
+    ctx.fillStyle='#1a0a00'; ctx.fill();
+
+    // Hair flow sides
+    ctx.beginPath();
+    ctx.moveTo(145,210); ctx.quadraticCurveTo(120,280,140,330);
+    ctx.quadraticCurveTo(150,300,160,270);
+    ctx.quadraticCurveTo(145,250,150,210);
+    ctx.fillStyle='#1a0a00'; ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(275,210); ctx.quadraticCurveTo(300,280,280,330);
+    ctx.quadraticCurveTo(270,300,260,270);
+    ctx.quadraticCurveTo(275,250,270,210);
+    ctx.fillStyle='#1a0a00'; ctx.fill();
+
+    // Eyes
+    ctx.beginPath(); ctx.ellipse(185,235,10,7,0,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(235,235,10,7,0,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(185,235,5,0,Math.PI*2);
+    ctx.fillStyle='#2a1500'; ctx.fill();
+    ctx.beginPath(); ctx.arc(235,235,5,0,Math.PI*2);
+    ctx.fillStyle='#2a1500'; ctx.fill();
+    // Catch light
+    ctx.beginPath(); ctx.arc(183,233,1.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(233,233,1.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.fill();
+
+    // Eyebrows
+    ctx.strokeStyle='#1a0a00'; ctx.lineWidth=2.5; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(173,222); ctx.quadraticCurveTo(185,218,198,222); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(222,222); ctx.quadraticCurveTo(235,218,248,222); ctx.stroke();
+
+    // Nose
+    ctx.strokeStyle='rgba(140,80,50,0.5)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(210,240); ctx.quadraticCurveTo(205,258,200,265); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(210,240); ctx.quadraticCurveTo(215,258,220,265); ctx.stroke();
+
+    // Smile
+    ctx.strokeStyle='rgba(140,70,50,0.7)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(210,278,18,0.2,Math.PI-0.2); ctx.stroke();
+
+    // Helmet ring (space helmet collar)
+    const ringGrad = ctx.createLinearGradient(120,300,300,310);
+    ringGrad.addColorStop(0,'#2a2060');
+    ringGrad.addColorStop(0.5,'#4a3090');
+    ringGrad.addColorStop(1,'#2a2060');
+    ctx.beginPath(); ctx.ellipse(210,310,100,22,0,0,Math.PI*2);
+    ctx.fillStyle=ringGrad; ctx.fill();
+    ctx.strokeStyle='rgba(180,120,255,0.6)'; ctx.lineWidth=2; ctx.stroke();
+
+    // Visor reflection
+    const visor = ctx.createLinearGradient(160,180,270,280);
+    visor.addColorStop(0,'rgba(0,200,255,0.05)');
+    visor.addColorStop(0.5,'rgba(180,120,255,0.08)');
+    visor.addColorStop(1,'rgba(0,200,255,0.03)');
+    ctx.beginPath(); ctx.ellipse(210,240,80,90,0,0,Math.PI*2);
+    ctx.fillStyle=visor; ctx.fill();
+
+    // Indian flag patch on arm
+    ctx.save(); ctx.translate(145,410);
+    ctx.beginPath(); ctx.rect(-25,-15,50,30);
+    ctx.fillStyle='#ff6600'; ctx.fill();
+    ctx.beginPath(); ctx.rect(-25,-5,50,20);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.beginPath(); ctx.rect(-25,5,50,10);
+    ctx.fillStyle='#138808'; ctx.fill();
+    // Ashoka Chakra
+    ctx.beginPath(); ctx.arc(0,0,7,0,Math.PI*2);
+    ctx.strokeStyle='#000080'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.restore();
+
+    // Text label bottom
+    ctx.fillStyle='rgba(180,120,255,0.8)';
+    ctx.font='bold 13px "Orbitron",monospace';
+    ctx.textAlign='center';
+    ctx.fillText('KALPANA CHAWLA', 210, 540);
+    ctx.font='10px "Share Tech Mono",monospace';
+    ctx.fillStyle='rgba(200,224,255,0.4)';
+    ctx.fillText('MISSION SPECIALIST · NASA', 210, 556);
+  }
+
+  draw();
+})();
+
+// ── RADAR / SIGNAL MAP ──
+(function(){
+  const canvas = document.getElementById('radarCanvas');
+  if(!canvas) return;
+  canvas.width = canvas.offsetWidth || 1200;
+  canvas.height = 220;
+  const ctx = canvas.getContext('2d');
+  let angle = 0;
+  const blips = [];
+  for(let i=0;i<12;i++){
+    blips.push({
+      x: 80 + Math.random()*(canvas.width-160),
+      y: 20 + Math.random()*(canvas.height-40),
+      a: Math.random()*0.8+0.3,
+      fadeAt: Math.random()*Math.PI*2
+    });
+  }
+
+  function drawRadar(){
+    const w=canvas.width, h=canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    // Background
+    ctx.fillStyle='rgba(6,13,31,0.4)';
+    ctx.fillRect(0,0,w,h);
+
+    // Grid lines
+    ctx.strokeStyle='rgba(0,245,255,0.05)'; ctx.lineWidth=1;
+    for(let x=0;x<w;x+=50){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+    for(let y=0;y<h;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+    // Sweep line
+    const cx=w/2, cy=h/2;
+    const maxR=Math.max(w,h);
+    ctx.save();
+    const sweepGrad = ctx.createConicalGradient ? null : null;
+    ctx.strokeStyle=`rgba(0,245,255,0.6)`;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(angle)*maxR, cy+Math.sin(angle)*maxR);
+    ctx.stroke();
+
+    // Sweep trail
+    for(let t=1;t<=20;t++){
+      const ta=angle-t*0.04;
+      const alpha=0.3*(1-t/20);
+      ctx.strokeStyle=`rgba(0,245,255,${alpha})`;
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.lineTo(cx+Math.cos(ta)*maxR, cy+Math.sin(ta)*maxR);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Blips
+    blips.forEach((b,i)=>{
+      const ba = Math.atan2(b.y-cy, b.x-cx);
+      const diff = ((angle-ba)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+      let alpha = 0;
+      if(diff < 0.3) alpha=1;
+      else if(diff < Math.PI*1.5) alpha=Math.max(0,1-diff/(Math.PI*1.5))*0.7;
+      if(alpha>0){
+        ctx.beginPath(); ctx.arc(b.x,b.y,4,0,Math.PI*2);
+        ctx.fillStyle=`rgba(0,245,255,${alpha})`;
+        ctx.shadowBlur=10; ctx.shadowColor='rgba(0,245,255,0.8)';
+        ctx.fill(); ctx.shadowBlur=0;
+        // Label
+        if(alpha>0.5){
+          ctx.font='9px "Share Tech Mono",monospace';
+          ctx.fillStyle=`rgba(0,245,255,${alpha*0.7})`;
+          ctx.fillText(`OBJ-${String(i+1).padStart(2,'0')}`,b.x+8,b.y-4);
+        }
+      }
+    });
+
+    // Horizontal scan lines
+    for(let y=0;y<h;y+=6){
+      ctx.fillStyle='rgba(0,0,0,0.04)';
+      ctx.fillRect(0,y,w,3);
+    }
+
+    angle += 0.015;
+    if(angle>Math.PI*2) angle-=Math.PI*2;
+    requestAnimationFrame(drawRadar);
+  }
+  drawRadar();
+})();
+
+// ── SOLAR SYSTEM ──
+(function(){
+  const canvas = document.getElementById('solarCanvas');
+  if(!canvas) return;
+  function resize(){
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight || 500;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  const ctx = canvas.getContext('2d');
+
+  const planets = [
+    { name:'Mercury', r:5,  dist:80,  speed:0.047, color:'#a8a8a8', glow:'rgba(168,168,168,0.4)' },
+    { name:'Venus',   r:9,  dist:120, speed:0.035, color:'#e8c06a', glow:'rgba(232,192,106,0.4)' },
+    { name:'Earth',   r:10, dist:170, speed:0.029, color:'#4a90d9', glow:'rgba(74,144,217,0.4)' },
+    { name:'Mars',    r:7,  dist:220, speed:0.024, color:'#d95030', glow:'rgba(217,80,48,0.4)'  },
+    { name:'Jupiter', r:22, dist:300, speed:0.013, color:'#c89060', glow:'rgba(200,144,96,0.4)' },
+    { name:'Saturn',  r:18, dist:390, speed:0.009, color:'#ddb86a', glow:'rgba(221,184,106,0.4)', ring:true },
+    { name:'Uranus',  r:12, dist:470, speed:0.006, color:'#70d8e8', glow:'rgba(112,216,232,0.4)' },
+    { name:'Neptune', r:11, dist:545, speed:0.005, color:'#3050d0', glow:'rgba(48,80,208,0.4)'  },
+  ];
+
+  let angles = planets.map(()=>Math.random()*Math.PI*2);
+  let hovered = -1;
+
+  canvas.addEventListener('mousemove', e=>{
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    const cx=canvas.width/2, cy=canvas.height/2;
+    hovered=-1;
+    planets.forEach((p,i)=>{
+      const px=cx+Math.cos(angles[i])*p.dist*scale;
+      const py=cy+Math.sin(angles[i])*p.dist*scale;
+      if(Math.hypot(mx-px,my-py)<p.r*scale+8) hovered=i;
+    });
+    canvas.style.cursor = hovered>=0?'pointer':'default';
+  });
+
+  let scale=1;
+
+  function draw(){
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight || 500;
+    const w=canvas.width, h=canvas.height;
+    const cx=w/2, cy=h/2;
+    scale = Math.min(w,h)/700;
+
+    ctx.clearRect(0,0,w,h);
+
+    // Space bg
+    ctx.fillStyle='#020510'; ctx.fillRect(0,0,w,h);
+
+    // Orbit rings
+    planets.forEach(p=>{
+      ctx.beginPath(); ctx.arc(cx,cy,p.dist*scale,0,Math.PI*2);
+      ctx.strokeStyle='rgba(0,245,255,0.07)'; ctx.lineWidth=1; ctx.stroke();
+    });
+
+    // Sun
+    const sunGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,40*scale);
+    sunGrad.addColorStop(0,'#fff8e0');
+    sunGrad.addColorStop(0.3,'#ffa500');
+    sunGrad.addColorStop(0.7,'#ff6000');
+    sunGrad.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(cx,cy,38*scale,0,Math.PI*2);
+    ctx.fillStyle=sunGrad; ctx.fill();
+    // Sun corona
+    ctx.beginPath(); ctx.arc(cx,cy,50*scale,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,160,0,0.15)'; ctx.lineWidth=12*scale; ctx.stroke();
+
+    // Planets
+    planets.forEach((p,i)=>{
+      const px=cx+Math.cos(angles[i])*p.dist*scale;
+      const py=cy+Math.sin(angles[i])*p.dist*scale;
+
+      if(p.ring){
+        ctx.save();
+        ctx.translate(px,py);
+        ctx.scale(1,0.35);
+        ctx.beginPath();
+        ctx.arc(0,0,(p.r+14)*scale,0,Math.PI*2);
+        ctx.strokeStyle='rgba(221,184,106,0.5)'; ctx.lineWidth=5*scale; ctx.stroke();
+        ctx.restore();
+      }
+
+      const glowR = ctx.createRadialGradient(px,py,0,px,py,p.r*scale*2);
+      glowR.addColorStop(0,p.color);
+      glowR.addColorStop(1,'transparent');
+      ctx.beginPath(); ctx.arc(px,py,p.r*scale*2,0,Math.PI*2);
+      ctx.fillStyle=p.glow; ctx.fill();
+
+      ctx.beginPath(); ctx.arc(px,py,p.r*scale,0,Math.PI*2);
+      ctx.fillStyle=p.color;
+      if(hovered===i){ ctx.shadowBlur=20; ctx.shadowColor=p.glow; }
+      ctx.fill(); ctx.shadowBlur=0;
+
+      if(hovered===i){
+        ctx.font=`bold ${11*scale}px "Share Tech Mono",monospace`;
+        ctx.fillStyle='rgba(200,224,255,0.9)';
+        ctx.textAlign='center';
+        ctx.fillText(p.name,px,py-(p.r*scale+12));
+      }
+
+      angles[i] += p.speed*0.012;
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── LIVE LOG ticker ──
+(function(){
+  const msgs = [
+    {t:'warn', m:'Micrometeorite proximity alert — 3.2km separation.'},
+    {t:'ok',   m:'Course correction burn complete. On nominal trajectory.'},
+    {t:'',     m:'Science payload collecting atmospheric particulate data.'},
+    {t:'ok',   m:'Ground uplink re-established. Telemetry synced.'},
+    {t:'alert',m:'Temperature spike in thruster B module. Auto-cooling active.'},
+    {t:'',     m:'Crew meal period. Low-activity monitoring mode.'},
+    {t:'ok',   m:'EVA hatch sealed. Pressure nominal.'},
+  ];
+  let idx=0, tSec=0;
+  setInterval(()=>{
+    tSec++;
+    const log = document.getElementById('missionLog');
+    if(!log) return;
+    const m = msgs[idx%msgs.length];
+    const h=String(Math.floor(tSec/3600)).padStart(2,'0');
+    const min=String(Math.floor((tSec%3600)/60)).padStart(2,'0');
+    const s=String(tSec%60).padStart(2,'0');
+    const entry=document.createElement('div');
+    entry.className='log-entry';
+    entry.innerHTML=`<span class="log-time">T+${h}:${min}:${s}</span><span class="log-msg ${m.t}">${m.m}</span>`;
+    log.insertBefore(entry,log.firstChild);
+    if(log.children.length>10) log.removeChild(log.lastChild);
+    idx++;
+  },4000);
+})();
+
+// ── SUN CANVAS ──
+(function(){
+  const canvas = document.getElementById('sunCanvas');
+  if(!canvas) return;
+  function resize(){
+    const w = canvas.parentElement.offsetWidth;
+    canvas.width = w; canvas.height = w;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  const ctx = canvas.getContext('2d');
+  let t = 0;
+
+  function drawSun(){
+    const w = canvas.width, h = canvas.height;
+    const cx = w/2, cy = h/2;
+    const R = Math.min(w,h)*0.36;
+    ctx.clearRect(0,0,w,h);
+
+    // Deep space bg
+    ctx.fillStyle = '#020510';
+    ctx.fillRect(0,0,w,h);
+
+    // Outer corona glow layers
+    for(let i=5;i>0;i--){
+      const grad = ctx.createRadialGradient(cx,cy,R*0.9,cx,cy,R*(1+i*0.32));
+      grad.addColorStop(0, `rgba(255,${100+i*20},0,${0.06-i*0.01})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.beginPath(); ctx.arc(cx,cy,R*(1+i*0.32),0,Math.PI*2);
+      ctx.fillStyle=grad; ctx.fill();
+    }
+
+    // Animated corona spikes
+    ctx.save();
+    ctx.translate(cx,cy);
+    for(let i=0;i<24;i++){
+      const angle = (i/24)*Math.PI*2 + t*0.003;
+      const len = R*(0.18 + 0.12*Math.sin(t*0.04+i*0.7));
+      const width = 0.04 + 0.02*Math.sin(t*0.06+i);
+      ctx.save();
+      ctx.rotate(angle);
+      const spkGrad = ctx.createLinearGradient(0,0,R+len,0);
+      spkGrad.addColorStop(0,'rgba(255,160,0,0.7)');
+      spkGrad.addColorStop(0.5,'rgba(255,100,0,0.3)');
+      spkGrad.addColorStop(1,'rgba(255,50,0,0)');
+      ctx.beginPath();
+      ctx.moveTo(R*0.95,0);
+      ctx.lineTo(R+len, -R*width);
+      ctx.lineTo(R+len*1.3, 0);
+      ctx.lineTo(R+len, R*width);
+      ctx.closePath();
+      ctx.fillStyle=spkGrad; ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // Solar prominences (arcs)
+    for(let p=0;p<3;p++){
+      const baseAngle = (p/3)*Math.PI*2 + t*0.002;
+      const arcR = R*(1.1 + 0.15*Math.sin(t*0.015+p));
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(baseAngle);
+      ctx.beginPath();
+      ctx.arc(R*0.8, 0, R*0.35, -Math.PI*0.4, Math.PI*0.4);
+      ctx.strokeStyle = `rgba(255,${80+p*40},0,${0.4+0.2*Math.sin(t*0.02+p)})`;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Sun body gradient
+    const sunGrad = ctx.createRadialGradient(cx-R*0.2, cy-R*0.2, 0, cx, cy, R);
+    sunGrad.addColorStop(0, '#fff8e0');
+    sunGrad.addColorStop(0.2, '#ffe060');
+    sunGrad.addColorStop(0.5, '#ffa000');
+    sunGrad.addColorStop(0.75, '#ff6000');
+    sunGrad.addColorStop(1, '#cc2800');
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle = sunGrad; ctx.fill();
+
+    // Sunspot granulation texture
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+    for(let g=0;g<60;g++){
+      const gx = cx + (Math.sin(g*137.5+t*0.005)*R*0.8);
+      const gy = cy + (Math.cos(g*137.5+t*0.004)*R*0.8);
+      const gr2 = ctx.createRadialGradient(gx,gy,0,gx,gy,R*0.09);
+      gr2.addColorStop(0,'rgba(255,200,50,0.18)');
+      gr2.addColorStop(1,'rgba(255,100,0,0)');
+      ctx.beginPath(); ctx.arc(gx,gy,R*0.09,0,Math.PI*2);
+      ctx.fillStyle=gr2; ctx.fill();
+    }
+    // Sunspots
+    const spots = [
+      {ax:0.25,ay:0.18,sr:0.055},
+      {ax:-0.3,ay:-0.22,sr:0.04},
+      {ax:0.1,ay:-0.35,sr:0.03},
+    ];
+    spots.forEach(s=>{
+      const sx = cx+R*(s.ax+0.04*Math.sin(t*0.008)), sy=cy+R*(s.ay+0.03*Math.cos(t*0.007));
+      const sg = ctx.createRadialGradient(sx,sy,0,sx,sy,R*s.sr);
+      sg.addColorStop(0,'rgba(80,20,0,0.7)');
+      sg.addColorStop(0.6,'rgba(120,40,0,0.4)');
+      sg.addColorStop(1,'rgba(200,80,0,0)');
+      ctx.beginPath(); ctx.arc(sx,sy,R*s.sr,0,Math.PI*2);
+      ctx.fillStyle=sg; ctx.fill();
+    });
+    ctx.restore();
+
+    // Rim glow
+    const rimGrad = ctx.createRadialGradient(cx,cy,R*0.82,cx,cy,R);
+    rimGrad.addColorStop(0,'rgba(255,80,0,0)');
+    rimGrad.addColorStop(1,'rgba(255,160,0,0.35)');
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle=rimGrad; ctx.fill();
+
+    t++;
+    requestAnimationFrame(drawSun);
+  }
+  drawSun();
+})();
+
+// ── MOON CANVAS ──
+(function(){
+  const canvas = document.getElementById('moonCanvas');
+  if(!canvas) return;
+  function resize(){
+    const w = canvas.parentElement.offsetWidth;
+    canvas.width = Math.min(w,420); canvas.height = Math.min(w,420);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  const ctx = canvas.getContext('2d');
+  let t = 0;
+
+  const craters = [
+    {x:0.15,y:-0.1,r:0.12},{x:-0.28,y:0.22,r:0.09},{x:0.3,y:0.3,r:0.07},
+    {x:-0.05,y:0.35,r:0.11},{x:0.22,y:-0.3,r:0.06},{x:-0.3,y:-0.1,r:0.08},
+    {x:0.05,y:0.05,r:0.04},{x:-0.18,y:-0.32,r:0.05},{x:0.35,y:-0.05,r:0.05},
+    {x:-0.1,y:0.15,r:0.035},{x:0.1,y:-0.18,r:0.03},{x:-0.32,y:0.08,r:0.06}
+  ];
+
+  function drawMoon(){
+    const w=canvas.width, h=canvas.height;
+    const cx=w/2, cy=h/2;
+    const R=Math.min(w,h)*0.4;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle='#020510'; ctx.fillRect(0,0,w,h);
+
+    // Moon outer glow
+    const moonGlow = ctx.createRadialGradient(cx,cy,R*0.9,cx,cy,R*1.35);
+    moonGlow.addColorStop(0,'rgba(180,200,240,0.12)');
+    moonGlow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(cx,cy,R*1.35,0,Math.PI*2);
+    ctx.fillStyle=moonGlow; ctx.fill();
+
+    // Moon body
+    const moonGrad = ctx.createRadialGradient(cx-R*0.25, cy-R*0.25, R*0.05, cx, cy, R);
+    moonGrad.addColorStop(0,'#e8eaf0');
+    moonGrad.addColorStop(0.3,'#c8cad8');
+    moonGrad.addColorStop(0.7,'#9498b0');
+    moonGrad.addColorStop(1,'#606480');
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle=moonGrad; ctx.fill();
+
+    // Maria (dark patches)
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+    const maria = [
+      {x:-0.1,y:-0.05,rx:0.38,ry:0.28,a:0.18},
+      {x:0.3,y:-0.25,rx:0.14,ry:0.10,a:0.12},
+      {x:-0.25,y:0.25,rx:0.18,ry:0.13,a:0.10},
+      {x:0.15,y:0.28,rx:0.12,ry:0.08,a:0.09},
+    ];
+    maria.forEach(m=>{
+      const mx=cx+m.x*R, my=cy+m.y*R;
+      const mg=ctx.createRadialGradient(mx,my,0,mx,my,R*0.4);
+      mg.addColorStop(0,`rgba(50,55,75,${m.a})`);
+      mg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.save();
+      ctx.translate(mx,my); ctx.scale(m.rx,m.ry);
+      ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2);
+      ctx.fillStyle=`rgba(40,45,65,${m.a})`; ctx.fill();
+      ctx.restore();
+    });
+
+    // Craters
+    craters.forEach(c=>{
+      const cxc=cx+c.x*R, cyc=cy+c.y*R, cr=c.r*R;
+      // Crater shadow
+      ctx.beginPath(); ctx.arc(cxc+cr*0.15,cyc+cr*0.15,cr,0,Math.PI*2);
+      ctx.fillStyle='rgba(30,32,50,0.5)'; ctx.fill();
+      // Crater floor
+      const cg=ctx.createRadialGradient(cxc-cr*0.2,cyc-cr*0.2,0,cxc,cyc,cr);
+      cg.addColorStop(0,'rgba(190,195,215,0.6)');
+      cg.addColorStop(0.7,'rgba(100,105,130,0.4)');
+      cg.addColorStop(1,'rgba(60,65,90,0.2)');
+      ctx.beginPath(); ctx.arc(cxc,cyc,cr,0,Math.PI*2);
+      ctx.fillStyle=cg; ctx.fill();
+      // Crater rim highlight
+      ctx.beginPath(); ctx.arc(cxc,cyc,cr,Math.PI,Math.PI*2);
+      ctx.strokeStyle='rgba(230,235,255,0.35)'; ctx.lineWidth=cr*0.18; ctx.stroke();
+    });
+    ctx.restore();
+
+    // Terminator shadow (day/night line) — slowly moving
+    const termAngle = Math.sin(t*0.002)*0.4;
+    const shadowX = cx + Math.sin(termAngle)*R*0.3;
+    const shadowGrad = ctx.createRadialGradient(shadowX,cy,R*0.1,cx+R*0.6,cy,R*1.1);
+    shadowGrad.addColorStop(0,'rgba(0,0,0,0)');
+    shadowGrad.addColorStop(0.6,'rgba(0,2,8,0.25)');
+    shadowGrad.addColorStop(1,'rgba(2,5,16,0.7)');
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle=shadowGrad; ctx.fill();
+    ctx.restore();
+
+    // Rim
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(180,190,220,0.15)'; ctx.lineWidth=1.5; ctx.stroke();
+
+    t++;
+    requestAnimationFrame(drawMoon);
+  }
+  drawMoon();
+})();
+
+// ── METEOR CANVAS ──
+(function(){
+  const canvas = document.getElementById('meteorCanvas');
+  if(!canvas) return;
+  canvas.width = canvas.offsetWidth || 1200;
+  canvas.height = 260;
+  const ctx = canvas.getContext('2d');
+
+  const meteors = [];
+  const asteroids = [];
+
+  function spawnMeteor(){
+    const speed = 4 + Math.random()*8;
+    meteors.push({
+      x: Math.random()*canvas.width*1.2 - canvas.width*0.1,
+      y: -10 - Math.random()*40,
+      vx: (Math.random()-0.5)*2 + speed*0.4,
+      vy: speed,
+      len: 40 + Math.random()*80,
+      alpha: 1,
+      width: 0.5 + Math.random()*1.5,
+      color: Math.random()>0.5 ? '#00f5ff' : '#ffaa00'
+    });
+  }
+
+  function spawnAsteroid(){
+    asteroids.push({
+      x: -30,
+      y: 30 + Math.random()*(canvas.height-60),
+      vx: 0.8 + Math.random()*1.4,
+      vy: (Math.random()-0.5)*0.4,
+      r: 4 + Math.random()*10,
+      rot: 0,
+      rotSpeed: (Math.random()-0.5)*0.04,
+      color: `hsl(${20+Math.random()*20},${20+Math.random()*15}%,${50+Math.random()*20}%)`
+    });
+  }
+
+  for(let i=0;i<3;i++) spawnMeteor();
+  for(let i=0;i<4;i++) { asteroids.push({x:Math.random()*canvas.width, y:30+Math.random()*(canvas.height-60), vx:0.8+Math.random()*1.4, vy:(Math.random()-0.5)*0.4, r:4+Math.random()*10, rot:Math.random()*Math.PI*2, rotSpeed:(Math.random()-0.5)*0.04, color:`hsl(${20+Math.random()*20},${20+Math.random()*15}%,${50+Math.random()*20}%)`}); }
+
+  let frame = 0;
+
+  function drawMeteors(){
+    canvas.width = canvas.offsetWidth || 1200;
+    const w=canvas.width, h=canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    // Background
+    ctx.fillStyle='rgba(6,13,31,0.6)'; ctx.fillRect(0,0,w,h);
+
+    // Grid
+    ctx.strokeStyle='rgba(0,245,255,0.04)'; ctx.lineWidth=1;
+    for(let x=0;x<w;x+=60){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+    for(let y=0;y<h;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+    // Asteroids
+    asteroids.forEach((a,i)=>{
+      a.x += a.vx; a.y += a.vy; a.rot += a.rotSpeed;
+      if(a.x > w+40) { a.x=-30; a.y=30+Math.random()*(h-60); a.vx=0.8+Math.random()*1.4; a.r=4+Math.random()*10; }
+
+      ctx.save();
+      ctx.translate(a.x,a.y); ctx.rotate(a.rot);
+      ctx.beginPath();
+      const sides = 5 + Math.floor(Math.random()*0); // keep shape consistent per asteroid
+      for(let s=0;s<6;s++){
+        const angle=(s/6)*Math.PI*2;
+        const dist=a.r*(0.7+0.3*Math.sin(s*2.3+a.rot*3));
+        s===0 ? ctx.moveTo(Math.cos(angle)*dist,Math.sin(angle)*dist)
+              : ctx.lineTo(Math.cos(angle)*dist,Math.sin(angle)*dist);
+      }
+      ctx.closePath();
+      ctx.fillStyle=a.color; ctx.fill();
+      ctx.strokeStyle='rgba(200,180,140,0.4)'; ctx.lineWidth=0.8; ctx.stroke();
+
+      // Glow
+      const ag=ctx.createRadialGradient(0,0,0,0,0,a.r*2);
+      ag.addColorStop(0,'rgba(200,150,80,0.15)');
+      ag.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath(); ctx.arc(0,0,a.r*2,0,Math.PI*2);
+      ctx.fillStyle=ag; ctx.fill();
+      ctx.restore();
+
+      // Speed trail
+      ctx.save();
+      const trailGrad=ctx.createLinearGradient(a.x,a.y,a.x-a.vx*20,a.y-a.vy*20);
+      trailGrad.addColorStop(0,'rgba(200,150,80,0.25)');
+      trailGrad.addColorStop(1,'rgba(200,150,80,0)');
+      ctx.strokeStyle=trailGrad; ctx.lineWidth=a.r*0.5;
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(a.x-a.vx*18,a.y-a.vy*18);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // Meteors (shooting stars)
+    meteors.forEach((m,i)=>{
+      m.x += m.vx; m.y += m.vy; m.alpha -= 0.012;
+
+      if(m.alpha<=0 || m.y>h+20){
+        Object.assign(m,{
+          x:Math.random()*w*1.2-w*0.1, y:-10-Math.random()*40,
+          vx:(Math.random()-0.5)*2+(4+Math.random()*8)*0.4,
+          vy:4+Math.random()*8, len:40+Math.random()*80,
+          alpha:1, width:0.5+Math.random()*1.5,
+          color:Math.random()>0.5?'#00f5ff':'#ffaa00'
+        });
+        return;
+      }
+
+      const angle = Math.atan2(m.vy,m.vx);
+      const tx=m.x-Math.cos(angle)*m.len, ty=m.y-Math.sin(angle)*m.len;
+
+      // Tail
+      const metGrad=ctx.createLinearGradient(m.x,m.y,tx,ty);
+      metGrad.addColorStop(0,m.color.replace(')',`,${m.alpha})`).replace('rgb','rgba').replace('#00f5ff',`rgba(0,245,255,${m.alpha})`).replace('#ffaa00',`rgba(255,170,0,${m.alpha})`));
+      metGrad.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath(); ctx.moveTo(m.x,m.y); ctx.lineTo(tx,ty);
+      ctx.strokeStyle=metGrad; ctx.lineWidth=m.width; ctx.stroke();
+
+      // Head glow
+      ctx.beginPath(); ctx.arc(m.x,m.y,m.width*2.5,0,Math.PI*2);
+      ctx.fillStyle=m.color==='#00f5ff'?`rgba(0,245,255,${m.alpha*0.9})`:`rgba(255,170,0,${m.alpha*0.9})`;
+      ctx.shadowBlur=8; ctx.shadowColor=m.color;
+      ctx.fill(); ctx.shadowBlur=0;
+    });
+
+    // Spawn new meteors periodically
+    if(frame%55===0) spawnMeteor();
+    if(frame%180===0) spawnAsteroid();
+
+    // Scan lines
+    for(let y=0;y<h;y+=5){ ctx.fillStyle='rgba(0,0,0,0.025)'; ctx.fillRect(0,y,w,2); }
+
+    // Labels
+    ctx.font='9px "Share Tech Mono",monospace';
+    ctx.fillStyle='rgba(0,245,255,0.3)';
+    ctx.fillText('METEOR DETECTION ARRAY — LIVE SIMULATION', 12, 18);
+    ctx.fillStyle='rgba(255,170,0,0.3)';
+    ctx.fillText(`TRACKED OBJECTS: ${meteors.length + asteroids.length}`, w-200, 18);
+
+    frame++;
+    requestAnimationFrame(drawMeteors);
+  }
+  drawMeteors();
+})();
+</script>
+</body>
+</html>
